@@ -31,7 +31,7 @@ jobs:
       - run: pytest
 
   database:
-    name: Database (builds, canonical, QA report up to date)
+    name: Database (builds, files canonical)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
