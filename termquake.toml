@@ -1,0 +1,72 @@
+# TermQuake pipeline configuration.
+# Everything that ties the code to the current Google Sheet lives here, so a
+# renamed tab or a new language is a one-line change, not a code change.
+
+[sheet]
+id = "1LfFJZxpbCbz2lRpKQ0_kTMKNJVDJ9FyrlAoP15TU8wU"
+
+# Tabs mirrored into data/raw/<file>.csv on every sync.
+# Only these are snapshotted; the per-language tabs are formula copies of the
+# main tab and would only add noise to the history.
+[sheet.tabs]
+"All Terms and Expressions /Terimler ve İfadeler" = "terms"
+"Terms Needing Definition Selection" = "definitions"
+"Source Term Selection" = "term_candidates"
+"Term submission" = "term_submissions"
+
+[publish]
+# Languages built into the database, exports, downloads and website.
+# Pilot: en, tr, es. Adding a language = add its code here, review its QA report.
+languages = ["en", "tr", "es"]
+# Language whose terms are listed first in exports and the web app.
+pivot = "en"
+
+# Sheet column header -> BCP 47 language code.
+# Headers are matched on the English name in parentheses ("Türkçe (Turkish)"
+# -> "Turkish"), because the native-script part of several headers has typos.
+[columns]
+"English" = "en"
+"Turkish" = "tr"
+"Spanish" = "es"
+"German" = "de"
+"Russian" = "ru"
+"French" = "fr"
+"Kurdish" = "kmr"
+"Zazaki" = "zza"
+"Arabic" = "ar"
+"Greek" = "el"
+"Japanese" = "ja"
+"Hebrew" = "he"
+"Italian" = "it"
+"Armenian" = "hy"
+"Dutch" = "nl"
+"Chinese-S" = "zh-Hans"
+"Chinese-T" = "zh-Hant"
+"Bulgarian" = "bg"
+"Korean" = "ko"
+"Persian" = "fa"
+"Hindi" = "hi"
+"Portuguese" = "pt"
+"Swedish" = "sv"
+"Romanian" = "ro"
+"Serbian" = "sr-Cyrl"
+"Macedonian" = "mk"
+"Hungarian" = "hu"
+"Finnish" = "fi"
+"Albanian" = "sq"
+"Czech" = "cs"
+"Polish" = "pl"
+
+# Domain column label -> domain code (see db/seed.sql).
+[domains]
+"Genel Terimler / General Terms" = "general"
+"Arama Kurtarma / Search & Rescue" = "search_rescue"
+"İlk Yardım / Fırst Aid" = "first_aid"
+"Tıbbi Terimler / Medical Terms" = "medical"
+"Diğer / Misc" = "misc"
+
+# Labels in the Domain column that are really an entry type, not a subject
+# field. Rows with these labels become concept.entry_type = 'phrase' and are
+# never split on "/".
+[entry_types]
+phrase_labels = ["İfadeler / Expressions"]
