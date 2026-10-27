@@ -1,0 +1,576 @@
+concept_id	sort_order	term
+1	0	arama kurtarma
+2	0	deprem
+3	0	afet yönetimi
+4	0	artçı sarsıntı
+5	0	enkaz
+5	1	moloz
+6	0	kazazede
+6	1	afetzede
+7	0	acil durum
+8	0	barınak
+9	0	tıbbi yardım
+9	1	tıbbi müdahale
+10	0	acil servis
+11	0	deprem bölgesi
+12	0	tehlikeli
+13	0	geçici iskan
+14	0	vinç
+15	0	kayıp
+16	0	su baskını
+16	1	sel
+17	0	mahsur kalmış
+18	0	kurtarmak
+19	0	kumanya
+20	0	ordu
+21	0	uyarmak
+22	0	ikaz
+23	0	konserve yiyecek
+24	0	sırt çantası
+25	0	fener (el feneri)
+26	0	çadır
+27	0	ilk yardım
+28	0	termal battaniye
+29	0	kurtarma ekibi
+30	0	alet
+30	1	araç
+31	0	termal kamera
+32	0	tır (kamyonu)
+33	0	sedye
+34	0	kalp masajı (CPR)
+35	0	boyunluk
+36	0	atel
+37	0	merhem
+38	0	ağrı kesici
+39	0	ilk yardım çantası
+40	0	temel hijyen malzemeleri
+41	0	sargı bezi
+42	0	gazlı bez
+43	0	elastik bandaj
+43	1	elastik sargı bezi
+44	0	yara bandı
+45	0	makas
+46	0	plaster
+46	1	yara bandı
+47	0	nefes alma
+48	0	kan şekeri
+49	0	kan basıncı
+49	1	tansiyon
+50	0	morluk
+50	1	ezilme
+50	2	bere
+51	0	yara
+52	0	kalp krizi geçirmek
+53	0	temel yaşam desteği
+54	0	ezilme sendromu
+55	0	ateş
+56	0	göğüs kafesi
+57	0	kalp
+58	0	karaciğer
+59	0	böbrekler
+60	0	akciğerler
+61	0	diz
+62	0	karın
+63	0	göğüs
+64	0	koltuk altı
+65	0	iç/dış kanama
+66	0	kemiği kırılmak
+67	0	burkulma
+68	0	vurmak
+69	0	bükülmek
+70	0	şişmek
+71	0	(kas) çekmek - (kas) çekmesi
+72	0	burkmak - burkulmak
+73	0	kaymak
+74	0	bayılmak
+75	0	düşmek
+76	0	yaralanmak
+77	0	tıbbi eldiven
+77	1	muayene eldiveni
+78	0	cımbız
+79	0	neşter
+80	0	steteskop
+81	0	steteskopla muayene etmek
+82	0	elle muayene etmek
+82	1	palpasyon tekniğini kullanmak
+83	0	turnike
+84	0	oksijen tüpü
+85	0	oksijen maskesi
+86	0	termometre
+87	0	endotrakeal tüp
+87	1	entübasyon tüpü
+88	0	otomatik eksternal defibrilatör (OED)
+89	0	triyaj
+89	1	aciliyet sırası
+90	0	ceset torbası
+91	0	tıbbi atık poşeti
+92	0	ısırık (arı, akrep vs.)
+93	0	elektrik çarpması
+94	0	baret
+95	0	emniyet kemeri
+96	0	alanı boşaltmak
+97	0	olay yeri
+98	0	tahliye güzergahı
+99	0	acil çıkış
+100	0	göçük
+101	0	enkaz kaldırma
+102	0	yerini bulmak
+102	1	tespit etmek
+103	0	emeklemek
+104	0	emekleyerek
+105	0	çıkarmak
+106	0	tutmak
+106	1	kavramak
+107	0	sürüklemek
+108	0	kurtarma planı
+109	0	bina göçmesi
+110	0	bodrum (katı)
+111	0	zemin kat
+112	0	bölge planı
+113	0	kiriş
+114	0	kolon
+115	0	çelik
+116	0	betonarme
+117	0	ahşap
+118	0	destek
+119	0	destek koymak
+120	0	takoz
+121	0	perlon
+122	0	kriko
+123	0	manivela
+124	0	baraj
+125	0	karabina
+126	0	halat
+126	1	ip
+127	0	düğüm
+127	1	ilmek
+128	0	oval halka - D halka
+129	0	şok emici halat
+130	0	düşüş durdurucu
+131	0	sekiz demiri
+131	1	sekizli iniş aleti
+132	0	mapa
+132	1	aybolt
+133	0	jumar
+134	0	sismik akustik dinleme cihazı
+135	0	hilti matkap
+135	1	darbeli matkap
+136	0	yangın söndürücü
+137	0	yangın hortumu
+138	0	su tahliyesi
+139	0	taşıyıcı sistem
+140	0	mobil mutfak
+141	0	ihtiyaç tespiti
+142	0	konum verisi
+143	0	deniz seviyesinin yükselmesi
+144	0	don
+145	0	soğuk yanığı
+145	1	soğuk ısırması
+146	0	deprem merkez üssü
+147	0	deprem fırtınası
+148	0	fay (hattı)
+149	0	Lütfen alanı boşaltın.
+150	0	Lütfen yaralıya dokunmayın ve yaralıyı hareket ettirmeye çalışmayın
+151	0	Polisi / İtfaiyeyi aramanız lazım.
+152	0	112'yi arayın
+153	0	Yardım gelene kadar hatta kalın
+154	0	Ne oldu?
+155	0	Ne kadar zaman oldu / geçti?
+156	0	Kaç kişi var?
+157	0	Yaralanan biri var mıydı, görebildiniz mi?
+158	0	Yaralılar nerede?
+159	0	Mahsur mu kaldılar?
+160	0	Bilinçleri yerinde mi?
+161	0	Ne zamandır bilinçleri yok?
+162	0	Onlarla konuşabildiniz mi?
+163	0	Kaza yeri nerede?
+164	0	Neresi acıyor?
+165	0	Evet demek için bir sefer, hayır için iki sefer gözünü kırp.
+166	0	Beni duyabiliyor musun?
+167	0	Beni görebiliyor musun?
+168	0	...yı hareket ettirebiliyor musun?
+169	0	Nefes almakta güçlük çekiyor musun? / Rahat nefes alabiliyor musun?
+170	0	Sağ / sol elinin / ayağının parmaklarını hareket ettirebiliyor musun?
+171	0	Herhangi bir ilaca alerjin var mı?
+172	0	Sakin olun
+173	0	Sedye / battaniye / boyunluk getirin.
+174	0	en kısa sürede
+175	0	ne kadar erken o kadar iyi
+176	0	çok dikkatlice
+177	0	üstten
+178	0	alttan
+179	0	soldan
+180	0	sağdan
+181	0	düz
+182	0	demir kesme makası
+183	0	enfeksiyon
+184	0	enjeksiyon
+185	0	titreme
+186	0	kişinin bilinci kapalı
+187	0	kafa lambası
+188	0	megafon
+189	0	omurga
+190	0	dirsek
+191	0	dehidrasyon
+192	0	nekroz
+193	0	kan nakli
+193	1	transfuzyon
+194	0	travma
+195	0	tansiyon aleti
+196	0	balta
+197	0	kazma
+198	0	kürek
+199	0	elektrikli testere
+199	1	hızar
+200	0	düdük
+201	0	acil barınma
+202	0	astım
+203	0	astım spreyi
+204	0	dikiş
+205	0	diyabetik
+205	1	şeker hastası
+206	0	diz kapağı
+207	0	uyku tulumu
+208	0	bağışçı (organ)
+209	0	bağışıklık
+210	0	battaniye
+211	0	beyin kanaması
+212	0	hamile
+212	1	gebe
+213	0	hipertansiyon
+213	1	yüksek tansiyon
+214	0	hipotermi
+215	0	zehirlenme
+216	0	zatürre
+217	0	yüz felci
+218	0	yüksek ateş
+219	0	yumuşak doku
+220	0	yoğun bakım
+221	0	çök-kapan-tutun
+222	0	avuç (içi) taşlama makinesi
+222	1	spiral taşlama makinesi
+223	0	alerji
+224	0	antiinflamatuvar
+224	1	iltihap sökücü ilaç
+225	0	antikoagülan
+225	1	pıhtıönler
+226	0	beton
+227	0	Bilinen ilaç alerjisi yok.
+228	0	bradikardi
+228	1	düşük nabız
+229	0	buzlanma
+230	0	defibrilasyon
+231	0	doku sertleşmesi
+231	1	skleroz
+232	0	eklem
+233	0	eklem ağrısı
+234	0	forseps
+235	0	nefes darlığı
+236	0	nöbet geçirmek
+237	0	çatlak
+238	0	suni teneffüs
+239	0	intravenöz tedavi
+240	0	ödem
+241	0	politravma
+242	0	şok
+243	0	omurilik
+244	0	(baziler) kafatası kırığı
+245	0	domuzdamı tahkimat
+246	0	koruyucu gözlük
+247	0	kaldırma yastığı
+248	0	canlı arama dedektörü
+249	0	ekskavatör
+250	0	havalı kırıcı
+251	0	gaz tüpü
+252	0	çekiç
+253	0	apandis
+254	0	baş dönmesi
+255	0	mide bulantısı
+257	0	bulaşıcı hastalık
+258	0	çıkık
+259	0	kronik hastalık
+260	0	kangren
+261	0	acil müdahale
+262	0	acil sağlık hizmeti
+263	0	acil tıp teknisyeni (ATT)
+265	0	afet bilgi sistemi
+266	0	afet bölge komutanı
+267	0	afet çadırı
+268	0	afet döngüsü
+269	0	afet gönüllüsü
+270	0	afet irtibat bürosu
+271	0	afet lojistiği
+272	0	afet ve acil durum çantası
+273	0	afet ve acil durum müdahele planı
+274	0	Afet ve Acil Durum Yönetimi Başkanlığı (AFAD)
+275	0	ağır hasar
+276	0	ağrı
+277	0	aile gıda paketi
+278	0	akciğer solunum cihazı
+279	0	akciğerleri etkileyen/pulmoner
+280	0	aktif fay
+281	0	akut
+282	0	alçı
+283	0	anaflaktik şok
+284	0	anemi
+284	1	kansızlık
+285	0	anestezi
+286	0	anestezi uzmanı
+287	0	(ani) kalp durması
+288	0	aspirasyon
+289	0	asistol
+290	0	aşılama
+291	0	atriyum
+292	0	balyoz
+293	0	basınç
+294	0	prognoz
+295	0	beyin omurilik sıvısı
+296	0	bina alanı
+298	0	bronş (akciğer)
+299	0	çekiçleme etkisi
+300	0	damar içi
+301	0	analjezik
+301	1	ağrı kesici
+302	0	sedatif
+302	1	sakinleştirici
+303	0	antipiretik
+303	1	ateş düşürücü
+304	0	antibiyotik
+306	0	antihistaminik
+307	0	anestetik
+308	0	laksatif
+308	1	müshil
+309	0	antiasit
+310	0	dekonjestan
+310	1	burun tıkanıklığı açıcı
+311	0	antitussif
+311	1	öksürük ilacı
+312	0	antiseptik
+313	0	tablet
+314	0	hap
+315	0	toz (ilaç)
+316	0	kapsül
+317	0	supozituvar
+317	1	fitil
+318	0	ampül
+319	0	krem
+320	0	jel
+321	0	şurup
+322	0	damla
+323	0	sprey
+324	0	efervesan tablet
+325	0	yan etki
+326	0	viyal
+327	0	kuru gıda
+328	0	ped
+328	1	hijyenik ped
+329	0	talaş sobası
+330	0	odun sobası
+331	0	kuzine soba
+332	0	pelet soba
+334	0	gaz yağı sobası
+335	0	elektrikli ısıtıcı
+336	0	fanlı ısıtıcı
+337	0	benzin
+338	0	dizel
+339	0	elektrik
+340	0	LPG (sıvılaştırılmış petrol gazı)
+341	0	CNG (sıkıştırılmış doğalgaz benzin)
+342	0	içlik
+343	0	termos
+344	0	soba kovası
+345	0	odun
+346	0	yeraltı görüntüleme cihazı
+347	0	beton kesme makinesi
+348	0	paramedik
+349	0	panik atak
+350	0	deprem kuşağı
+351	0	deprem süresi
+352	0	deprem şiddeti
+353	0	deprem yalıtımı
+354	0	erzak
+355	0	gezici sağlık hizmeti
+356	0	güvenli bölge
+357	0	güvenlik çemberi
+358	0	hafif hasar
+359	0	ihbarda bulunmak
+360	0	iş makinesi
+361	0	öncü deprem
+362	0	sismograf
+363	0	şişmek
+364	0	tahliye
+365	0	Ulusal Medikal Kurtarma Ekibi (UMKE)
+366	0	Sana yardım edeceğiz.
+367	0	Biz buradayız.
+368	0	Sakın uyuma.
+369	0	Az kaldı, biraz daha dayan.
+370	0	Seni oradan çıkaracağız.
+371	0	Adınız nedir?
+372	0	kefen
+373	0	cenaze namazı
+374	0	dua
+375	0	kaymakam
+376	0	belediye başkanı
+377	0	toplu mezar
+378	0	defin
+379	0	muhtar
+380	0	cenaze aracı
+381	0	afet bölgesi
+382	0	istinat duvarı
+383	0	biberon
+384	0	emzik
+385	0	arama kurtarma köpeği
+386	0	havalimanı
+388	0	biberon emziği
+389	0	hematom
+390	0	kömür
+391	0	arteriyel kanül
+392	0	damar yolu açmak
+393	0	donmak
+394	0	drenaj (vücuttan sıvı çekmeye yarayan alet)
+395	0	entübasyon
+396	0	gıda zehirlenmesi
+397	0	göğüs tüpü
+398	0	görme kaybı
+399	0	halsizlik
+400	0	hırıltı (nefes)
+401	0	hiperglisemi (kan şekerinin yükselmesi)
+402	0	hissizlik (organlarda)
+403	0	iç organlar
+404	0	iltihap
+404	1	inflamasyon
+405	0	inme
+406	0	insülin iğnesi
+407	0	ishal
+408	0	iskemi
+409	0	kalça kemiği
+410	0	kalp krizi
+411	0	kalp pili
+412	0	kalp rahatsızlığı
+413	0	kan dolaşımı
+414	0	kan pıhtısı
+415	0	kanamanın engellenmesi
+416	0	kardiyoversiyon
+417	0	kas ağrısı
+417	1	miyalji
+418	0	kas gevşetici
+419	0	kasılma (spazm)
+420	0	sonda (kateter)
+421	0	kemik kırığı
+422	0	kıkırdak
+423	0	koroner arter
+424	0	köprücük kemiği
+425	0	kusma
+426	0	lokal anestezik
+427	0	mesane
+428	0	organ yetmezliği
+429	0	ortopedi uzmanı
+429	1	ortopedist
+430	0	pnömotoraks
+431	0	regl
+431	1	adet
+432	0	sıkışmak (bir yere)
+433	0	şişme
+434	0	tansiyon düşüklüğü
+435	0	tendon
+436	0	tetanos
+437	0	tibia
+437	1	kaval kemiği
+438	0	topikal anestezi
+439	0	toraks, göğüs kafesi
+440	0	uyluk kemiği
+441	0	uyuşmak (bedenin bir bölümü)
+442	0	üstderi
+443	0	ventriküler fibrilasyon
+444	0	yaralı
+445	0	yatıştırma (ilaçla)
+446	0	ambu
+447	0	akciğer damarı tıkanıklığı
+447	1	akciğer embolisi
+448	0	heimlich manevrası
+449	0	beyin sarsıntısı
+450	0	protez
+451	0	acil tıbbi müdahale ekibi
+452	0	vücut ısısı
+453	0	ateşli havale
+453	1	havale nöbeti
+454	0	sara krizi
+455	0	bilinci açık
+456	0	bilinci kapalı
+457	0	(uyaranlara) yanıt veriyor
+458	0	(uyaranlara) yanıt vermiyor
+459	0	hipoglisemi
+459	1	kan şekeri düşüklüğü
+460	0	airway
+461	0	barınmak
+462	0	baygınlık
+463	0	düşme
+464	0	bronşçuk (akciğer)
+465	0	yakıt
+466	0	kapalı kırık
+467	0	açık kırık
+468	0	moloz
+469	0	enkaz
+470	0	dolgu zemin
+471	0	epilepsi nöbeti
+472	0	hilti
+473	0	idrar yolu
+474	0	ileri yaşam desteği
+475	0	kaburga kırığı
+476	0	mobil sağlık ünitesi
+477	0	nazogastrik Tüp
+478	0	halüsinasyon görmek
+479	0	taşikardi
+480	0	yanık
+481	0	yatağa bağlı (yatalak)
+482	0	gaz brülörü (asetilen, doğalgaz, propan)
+483	0	bitişik nizam
+484	0	ayrık nizam
+485	0	blok nizam
+486	0	yaşam koridoru
+487	0	aspirasyon seti
+488	0	batikon
+489	0	boks gömleği
+489	1	boks önlüğü
+490	0	ameliyat önlüğü
+491	0	cilt stapleri
+492	0	damar yolu
+493	0	distile su
+494	0	doğum seti
+495	0	doku yapıştırıcısı
+496	0	el dezenfektanı
+497	0	elektrot
+498	0	enjektör
+499	0	glukometre
+500	0	göğüs drenaj seti
+501	0	sarsıntı
+502	0	kan verme seti
+503	0	Kanama durdurucu
+504	0	laringeal maske
+505	0	depo
+506	0	nazogastrik sonda
+507	0	yaralı
+508	0	pamuk
+509	0	pansuman malzemesi
+510	0	serum fizyolojik
+511	0	serum seti
+511	1	infüzyon seti
+512	0	travma tahtası
+512	1	omurga tahtası
+513	0	sahra hastanesi
+514	0	abdominal örtü
+515	0	hasta alt örtüsü
+516	0	havlu
+517	0	tentürdiyot
+518	0	sterilizasyon bohçası
+519	0	geçici tuvalet
+520	0	duş
+521	0	levye
+522	0	hidrolik destek
+523	0	hamlaç
+524	0	su mengenesi
+525	0	hidrolik kesici
+526	0	hidrolik ayırıcı
+527	0	elektrikli el aletleri
+528	0	Uluslararası Arama Kurtarma Danışma Grubu (INSARAG)
+529	0	kirli kan
