@@ -9,6 +9,8 @@
 --   triggers at bottom  → rewritten as plpgsql (or Supabase audit)
 -- =====================================================================
 PRAGMA foreign_keys = ON;
+-- Canonical data: data/db/<table>.sql (see src/termquake/dbio.py).
+-- qa_issue is derived: recomputed from the data on every build.
 
 -- ---------------------------------------------------------------------
 -- 1. Reference tables
@@ -19,7 +21,6 @@ CREATE TABLE language (
   name_native  TEXT NOT NULL,
   script       TEXT,                          -- ISO 15924: Latn, Arab, Cyrl, Hans ...
   direction    TEXT NOT NULL DEFAULT 'ltr' CHECK (direction IN ('ltr','rtl')),
-  is_active    INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
   sort_order   INTEGER NOT NULL DEFAULT 100
 );
 
@@ -160,6 +161,7 @@ CREATE TABLE review_vote (
 
 -- ---------------------------------------------------------------------
 -- 4. Provenance, history, QA, releases
+--    The legacy sheet's original cells are archived as CSV in data/legacy/.
 -- ---------------------------------------------------------------------
 CREATE TABLE import_batch (
   id              INTEGER PRIMARY KEY,
@@ -167,16 +169,6 @@ CREATE TABLE import_batch (
   fetched_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   script_version  TEXT NOT NULL,              -- git commit of the importer
   notes           TEXT
-);
-
-CREATE TABLE import_raw (                     -- lossless copy of every legacy cell
-  batch_id     INTEGER NOT NULL REFERENCES import_batch(id) ON DELETE CASCADE,
-  sheet        TEXT NOT NULL,
-  row_number   INTEGER NOT NULL,
-  column_name  TEXT NOT NULL,
-  raw_value    TEXT NOT NULL,
-  concept_id   INTEGER REFERENCES concept(id),
-  PRIMARY KEY (batch_id, sheet, row_number, column_name)
 );
 
 CREATE TABLE qa_issue (                       -- review queue for messy legacy cells

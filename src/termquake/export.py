@@ -1,20 +1,21 @@
-"""Export the SQLite termbase to every format people need.
+"""Publish the database in the formats people need (build artifacts, not committed).
 
-Committed to git (data/export/) -- small, sorted, diff-friendly text:
-    concepts.tsv, terms.<lang>.tsv, definitions.tsv, qa_issues.tsv, QA_REPORT.md
-Published as downloads (site/public/downloads/) -- build artifacts, not committed:
-    termquake.db (SQLite), termquake.tbx (TBX-Basic, ISO 30042), termquake.csv (spreadsheet)
-Web app data (site/public/data/termbase.json) -- compact JSON the offline app loads.
+site/public/downloads/
+    termquake.db    the SQLite database itself
+    termquake.tbx   TBX-Basic (TerminOrgs v4, ISO 30042): for CAT tools and termbanks
+    termquake.csv   one row per entry, like the old sheet: for spreadsheets
+site/public/data/termbase.json
+    compact data for the offline web app
 
-Exports never contain timestamps or anything else that changes between two
-builds of the same data, so a commit only appears when the terminology changed.
+Only languages listed in [publish] in termquake.toml are exported. Rejected
+terms and flagged definitions are never published.
 """
 
 from __future__ import annotations
 
 import csv
 import datetime as dt
-import io
+import hashlib
 import json
 import os
 import shutil
@@ -27,30 +28,9 @@ from pathlib import Path
 
 from . import SCHEMA_VERSION, __version__
 from .config import Config, Paths
-from .fetch import snapshot_digest
 
-ISSUE_HELP = {
-    "placeholder_value": "Cell holds a spreadsheet placeholder or error (#empty, #REF!) instead of a term. Ignored.",
-    "missing_nr": "Row has content but no number in the Nr. column, so it cannot be identified. Skipped.",
-    "duplicate_nr": "Two rows share one Nr. The second row was skipped.",
-    "missing_pivot_term": "Entry has no English term, so it cannot be found from English.",
-    "missing_domain": "Domain cell is empty (often an invisible character). Entry has no domain.",
-    "unknown_domain": "Domain label is not in termquake.toml.",
-    "duplicate_term": "Same term (ignoring case and accents) appears in more than one entry. Often a duplicated row.",
-    "ambiguous_slash": "'/' without spaces: synonym, gender ending (ferido/a) or two concepts in one cell? Not split.",
-    "dash_separator": "' - ' inside a term: usually an acronym or a derived form. Not split.",
-    "acronym_in_parentheses": "Acronym in brackets, e.g. '(CPR)'. Candidate for a separate acronym term.",
-    "parenthetical": "Text in brackets may be an explanation rather than part of the term.",
-    "comma_in_term": "Comma outside brackets may separate synonyms.",
-    "definition_needs_review": "Definition contains a question; looks like a discussion note. Hidden on the website.",
-    "definition_too_short": "Definition is very short or incomplete. Hidden on the website.",
-    "definition_unknown_entry": "Definitions tab refers to an Nr. that does not exist.",
-    "removed_invisible_chars": "Invisible characters (zero-width space etc.) were removed automatically.",
-    "fixed_dotted_i": "Broken Turkish 'i̇' (i + combining dot) was repaired to 'i' automatically.",
-    "duplicate_in_cell": "Same synonym listed twice in one cell. Kept once.",
-    "unknown_column": "A sheet column is not mapped to a language in termquake.toml.",
-}
-SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
+TBX_NS = "urn:iso:std:iso:30042:ed-2"
+XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
 
 
 @dataclass
@@ -60,9 +40,6 @@ class Entry:
     entry_type: str
     terms: dict[str, list[str]]
     definitions: dict[str, dict]
-
-
-# --------------------------------------------------------------------------- loading
 
 
 def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
@@ -81,178 +58,45 @@ def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
     hidden = {
         did
         for (did,) in conn.execute(
-            "SELECT entity_id FROM qa_issue WHERE entity_type='definition' "
-            "AND severity IN ('error','warning') AND status='open'"
+            "SELECT entity_id FROM qa_issue WHERE entity_type = 'definition' "
+            "AND severity IN ('error', 'warning') AND status = 'open'"
         )
     }
-    for did, cid, lang, text, source in conn.execute(
-        "SELECT df.id, df.concept_id, df.lang, df.text, s.short_name FROM definition df "
-        "LEFT JOIN source s ON s.id = df.source_id ORDER BY df.concept_id, df.lang"
+    for did, cid, lang, text, source, review in conn.execute(
+        "SELECT df.id, df.concept_id, df.lang, df.text, s.short_name, df.review_status "
+        "FROM definition df LEFT JOIN source s ON s.id = df.source_id ORDER BY df.concept_id, df.lang"
     ):
         if cid in entries and lang in languages:
             entries[cid].definitions[lang] = {
                 "text": text,
                 "source": source,
-                "hidden": did in hidden,
+                "hidden": did in hidden or review == "rejected",
             }
     return list(entries.values())
 
 
-# --------------------------------------------------------------------------- TSV (committed)
-
-
-def _tsv(path: Path, header: list[str], rows: list[list]) -> None:
-    buf = io.StringIO()
-    writer = csv.writer(buf, delimiter="\t", lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(header)
-    for row in rows:
-        writer.writerow(["" if v is None else str(v).replace("\t", " ") for v in row])
-    path.write_text(buf.getvalue(), encoding="utf-8")
-
-
-def write_tsv_exports(conn: sqlite3.Connection, config: Config, out: Path) -> None:
-    out.mkdir(parents=True, exist_ok=True)
-    for stale in out.glob("terms.*.tsv"):
-        stale.unlink()
-    _tsv(
-        out / "concepts.tsv",
-        ["id", "domain", "entry_type", "status"],
-        conn.execute(
-            "SELECT c.id, d.code, c.entry_type, c.status FROM concept c "
-            "LEFT JOIN domain d ON d.id = c.domain_id ORDER BY c.id"
-        ).fetchall(),
-    )
-    for lang in config.languages:
-        _tsv(
-            out / f"terms.{lang}.tsv",
-            ["concept_id", "sort_order", "term"],
-            conn.execute(
-                "SELECT concept_id, sort_order, text FROM term WHERE lang=? "
-                "ORDER BY concept_id, sort_order",
-                (lang,),
-            ).fetchall(),
-        )
-    _tsv(
-        out / "definitions.tsv",
-        ["concept_id", "lang", "definition", "source"],
-        conn.execute(
-            "SELECT df.concept_id, df.lang, df.text, s.short_name FROM definition df "
-            "LEFT JOIN source s ON s.id = df.source_id ORDER BY df.concept_id, df.lang"
-        ).fetchall(),
-    )
-    _tsv(out / "qa_issues.tsv", ["severity", "issue", "entry", "lang", "detail"], _issue_rows(conn))
-
-
-def _issue_rows(conn: sqlite3.Connection) -> list[list]:
-    rows = conn.execute("""
-        SELECT q.severity, q.issue_type,
-               CASE q.entity_type
-                    WHEN 'concept' THEN q.entity_id
-                    WHEN 'term' THEN (SELECT concept_id FROM term WHERE id = q.entity_id)
-                    WHEN 'definition' THEN (SELECT concept_id FROM definition WHERE id = q.entity_id)
-                    ELSE 'row ' || q.entity_id END AS entry,
-               q.lang, q.detail
-        FROM qa_issue q""").fetchall()
-    return sorted(
-        rows, key=lambda r: (SEVERITY_ORDER[r[0]], r[1], str(r[2]).zfill(8), r[3] or "", r[4] or "")
-    )
-
-
-# --------------------------------------------------------------------------- QA report
-
-
-def write_qa_report(conn: sqlite3.Connection, config: Config, path: Path) -> None:
-    total = conn.execute("SELECT COUNT(*) FROM concept WHERE status='active'").fetchone()[0]
-    names = dict(conn.execute("SELECT code, name_en FROM language"))
-    lines = [
-        "# TermQuake data quality report",
-        "",
-        "Generated by `termquake export` from the latest sheet snapshot. Fix issues in the Google",
-        "Sheet; the next sync regenerates this file. Entry numbers are the sheet's **Nr.** column.",
-        "",
-        "## Coverage",
-        "",
-        "| Language | Entries with a term | Coverage | Terms (incl. synonyms) |",
-        "|---|---:|---:|---:|",
-    ]
-    for lang in config.languages:
-        covered, terms = conn.execute(
-            "SELECT COUNT(DISTINCT concept_id), COUNT(*) FROM term WHERE lang=?", (lang,)
-        ).fetchone()
-        pct = 100 * covered / total if total else 0
-        lines.append(f"| {names[lang]} (`{lang}`) | {covered} / {total} | {pct:.1f}% | {terms} |")
-
-    rows = _issue_rows(conn)
-    counts: dict[tuple[str, str], int] = defaultdict(int)
-    for sev, code, *_ in rows:
-        counts[(sev, code)] += 1
-    lines += [
-        "",
-        "## Issues by type",
-        "",
-        "| Severity | Issue | Count | Meaning |",
-        "|---|---|---:|---|",
-    ]
-    for (sev, code), n in sorted(
-        counts.items(), key=lambda kv: (SEVERITY_ORDER[kv[0][0]], kv[0][1])
-    ):
-        lines.append(f"| {sev} | `{code}` | {n} | {ISSUE_HELP.get(code, '')} |")
-
-    lines += [
-        "",
-        "## Worklist",
-        "",
-        "Errors and warnings, entry by entry. Info-level items are in `qa_issues.tsv`.",
-        "",
-    ]
-    current = None
-    for sev, code, entry, lang, detail in rows:
-        if sev == "info":
-            continue
-        if code != current:
-            current = code
-            lines += ["", f"### `{code}` ({sev})", ""]
-        where = f"Nr. {entry}" if str(entry).isdigit() else str(entry)
-        lang_part = f" [{lang}]" if lang else ""
-        lines.append(f"- {where}{lang_part}: {_md(detail or '')}")
-    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-
-
-def _md(text: str) -> str:
-    return text.replace("|", "\\|").replace("\n", " ")
-
-
-# --------------------------------------------------------------------------- downloads
+# --------------------------------------------------------------------------- TBX
 
 
 def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, path: Path) -> None:
-    """TBX-Basic (TerminOrgs v4) in TBX v3 DCA style, ISO 30042:2019."""
-    labels = {
-        code: label
-        for code, label in conn.execute(
-            "SELECT d.code, l.label FROM domain d JOIN domain_label l ON l.domain_id=d.id AND l.lang='en'"
+    labels = dict(
+        conn.execute(
+            "SELECT d.code, l.label FROM domain d JOIN domain_label l ON l.domain_id = d.id AND l.lang = 'en'"
         )
-    }
-    ns = "urn:iso:std:iso:30042:ed-2"
-    ET.register_namespace("", ns)
-    q = lambda tag: f"{{{ns}}}{tag}"  # noqa: E731
-    root = ET.Element(
-        q("tbx"),
-        {
-            "type": "TBX-Basic",
-            "style": "dca",
-            "{http://www.w3.org/XML/1998/namespace}lang": config.pivot,
-        },
     )
-    header = ET.SubElement(root, q("tbxHeader"))
-    file_desc = ET.SubElement(header, q("fileDesc"))
+    ET.register_namespace("", TBX_NS)
+
+    def q(tag: str) -> str:
+        return f"{{{TBX_NS}}}{tag}"
+
+    root = ET.Element(q("tbx"), {"type": "TBX-Basic", "style": "dca", XML_LANG: config.pivot})
+    file_desc = ET.SubElement(ET.SubElement(root, q("tbxHeader")), q("fileDesc"))
     ET.SubElement(
         ET.SubElement(file_desc, q("titleStmt")), q("title")
     ).text = "TermQuake: disaster relief and search & rescue terminology"
-    source_desc = ET.SubElement(file_desc, q("sourceDesc"))
-    ET.SubElement(source_desc, q("p")).text = (
-        "Department of Translation and Interpreting Studies, Boğaziçi University. "
-        "Licensed CC BY-NC 4.0. https://github.com/ysfztpp/termquake"
+    ET.SubElement(ET.SubElement(file_desc, q("sourceDesc")), q("p")).text = (
+        "Department of Translation and Interpreting Studies, Boğaziçi University, and volunteers. "
+        "Licensed CC BY-NC 4.0. https://github.com/ysfztpp/TermQuake"
     )
     body = ET.SubElement(ET.SubElement(root, q("text")), q("body"))
     for e in entries:
@@ -267,9 +111,7 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
             terms = e.terms.get(lang)
             if not terms:
                 continue
-            ls = ET.SubElement(
-                ce, q("langSec"), {"{http://www.w3.org/XML/1998/namespace}lang": lang}
-            )
+            ls = ET.SubElement(ce, q("langSec"), {XML_LANG: lang})
             d = e.definitions.get(lang)
             if d and not d["hidden"]:
                 grp = ET.SubElement(ls, q("descripGrp"))
@@ -287,8 +129,11 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
     )
 
 
+# --------------------------------------------------------------------------- CSV
+
+
 def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
-    """One row per entry, like the original sheet. UTF-8 with BOM so Excel shows Turkish correctly."""
+    """One row per entry. UTF-8 with BOM so Excel shows Turkish characters correctly."""
     with path.open("w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(
@@ -301,7 +146,7 @@ def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
             ]
         )
         for e in entries:
-            defs = [e.definitions.get(lang, {}) for lang in config.languages]
+            defs = [e.definitions.get(lang) for lang in config.languages]
             w.writerow(
                 [
                     e.id,
@@ -316,10 +161,19 @@ def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
 # --------------------------------------------------------------------------- web app data
 
 
+def data_version(data_db: Path) -> str:
+    """Fingerprint of the canonical data: changes exactly when the terminology changes."""
+    h = hashlib.sha256()
+    for path in sorted(data_db.glob("*.sql")):
+        h.update(path.name.encode())
+        h.update(path.read_bytes())
+    return h.hexdigest()[:12]
+
+
 def _data_date(root: Path) -> str:
     try:
         out = subprocess.run(
-            ["git", "log", "-1", "--format=%cs", "--", "data/raw"],
+            ["git", "log", "-1", "--format=%cs", "--", "data/db"],
             cwd=root,
             capture_output=True,
             text=True,
@@ -333,12 +187,7 @@ def _data_date(root: Path) -> str:
 
 
 def write_site_json(
-    entries: list[Entry],
-    conn: sqlite3.Connection,
-    config: Config,
-    paths: Paths,
-    raw_dir: Path,
-    path: Path,
+    entries: list[Entry], conn: sqlite3.Connection, config: Config, paths: Paths, path: Path
 ) -> None:
     langs = {
         code: (name, native, direction)
@@ -354,7 +203,7 @@ def write_site_json(
     payload = {
         "schema": SCHEMA_VERSION,
         "data": {
-            "version": snapshot_digest(raw_dir),
+            "version": data_version(paths.data_db),
             "updated": _data_date(paths.root),
             "pipeline": __version__,
             "commit": os.environ.get("GITHUB_SHA", "")[:12],
@@ -391,23 +240,17 @@ def _entry_json(e: Entry) -> dict:
 # --------------------------------------------------------------------------- entry point
 
 
-def export_all(config: Config, paths: Paths, raw_dir: Path | None = None) -> None:
-    raw_dir = raw_dir or paths.raw
+def export_all(config: Config, paths: Paths) -> None:
     conn = sqlite3.connect(paths.database)
     try:
         if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
             raise RuntimeError("Database schema version mismatch; rebuild with `termquake build`.")
         entries = load_entries(conn, config.languages)
-        write_tsv_exports(conn, config, paths.export)
-        write_qa_report(conn, config, paths.export / "QA_REPORT.md")
-
         downloads = paths.site_public / "downloads"
         downloads.mkdir(parents=True, exist_ok=True)
         write_tbx(entries, conn, config, downloads / "termquake.tbx")
         write_csv(entries, config, downloads / "termquake.csv")
-        write_site_json(
-            entries, conn, config, paths, raw_dir, paths.site_public / "data" / "termbase.json"
-        )
+        write_site_json(entries, conn, config, paths, paths.site_public / "data" / "termbase.json")
     finally:
         conn.close()
     shutil.copyfile(paths.database, downloads / "termquake.db")
