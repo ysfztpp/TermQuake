@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { type UiLang, translate } from "../i18n";
 import type { Entry, Language } from "../types";
 import { CloseIcon } from "./icons";
@@ -22,28 +22,51 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
     available.some((l) => l.code === initialLang) ? initialLang : (available[0]?.code ?? initialLang),
   );
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const t = (key: Parameters<typeof translate>[1]) => translate(ui, key);
 
-  useEffect(() => {
+  // Layout effect: runs before the dialog is painted, so it is never visible
+  // without focus inside it and a working Escape key.
+  useLayoutEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "Tab") {
+        trapFocus(e, dialogRef.current);
+      }
+    };
     document.addEventListener("keydown", onKey);
     document.body.classList.add("no-scroll");
-
-    let lock: WakeLockSentinel | undefined;
-    navigator.wakeLock
-      ?.request("screen")
-      .then((l) => (lock = l))
-      .catch(() => {});
-
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.classList.remove("no-scroll");
-      void lock?.release().catch(() => {});
       opener?.focus();
     };
   }, [onClose]);
+
+  // Keep the screen on while a term is shown. Browsers drop the lock when the
+  // page is hidden, so take it again when the page becomes visible.
+  useEffect(() => {
+    let lock: WakeLockSentinel | undefined;
+    const acquire = () => {
+      if (document.visibilityState !== "visible" || !navigator.wakeLock) return;
+      navigator.wakeLock
+        .request("screen")
+        .then((l) => {
+          lock = l;
+        })
+        .catch(() => {});
+    };
+    acquire();
+    document.addEventListener("visibilitychange", acquire);
+    return () => {
+      document.removeEventListener("visibilitychange", acquire);
+      void lock?.release().catch(() => {});
+    };
+  }, []);
 
   const meta = languages.find((l) => l.code === lang);
   const [main, ...alternatives] = entry.t[lang] ?? [];
@@ -51,7 +74,7 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
   const long = (main?.length ?? 0) > 28;
 
   return (
-    <div class="show" role="dialog" aria-modal="true" aria-label={meta?.native ?? lang}>
+    <div class="show" role="dialog" aria-modal="true" aria-label={meta?.native ?? lang} ref={dialogRef}>
       <div class="show-bar">
         <div class="show-langs" role="group" aria-label={t("to")}>
           {available.map((l) => (
@@ -84,4 +107,21 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
       <p class="show-hint">{t("showHint")}</p>
     </div>
   );
+}
+
+/** Keep Tab / Shift+Tab inside the dialog (aria-modal), cycling between its buttons. */
+function trapFocus(e: KeyboardEvent, dialog: HTMLElement | null) {
+  if (!dialog) return;
+  const focusable = [...dialog.querySelectorAll<HTMLElement>("button, [href], [tabindex]:not([tabindex='-1'])")];
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  if (e.shiftKey && (active === first || !dialog.contains(active))) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (active === last || !dialog.contains(active))) {
+    e.preventDefault();
+    first.focus();
+  }
 }
