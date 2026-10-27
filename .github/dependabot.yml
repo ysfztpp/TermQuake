@@ -1,4 +1,7 @@
-# Monthly, grouped dependency update pull requests. CI must pass before merging.
+# Monthly dependency update pull requests. CI must pass before merging.
+# Minor and patch updates are grouped into one PR; major upgrades (which can
+# break things, e.g. Preact 10 -> 11) each get their own PR so they can be
+# tested and merged deliberately.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -6,8 +9,12 @@ updates:
     schedule:
       interval: monthly
     groups:
-      web:
-        patterns: ["*"]
+      web-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Type definitions must match the Node version CI runs (24), not the newest Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: pip
     directory: /
     schedule:
