@@ -100,7 +100,7 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
       </div>
 
       {source && (
-        <p class="show-source" lang={sourceLang}>
+        <p class="show-source" lang={sourceLang} dir={languages.find((l) => l.code === sourceLang)?.dir ?? "auto"}>
           {source}
         </p>
       )}

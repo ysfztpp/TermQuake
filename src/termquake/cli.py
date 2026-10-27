@@ -15,12 +15,13 @@ One-time / rare:
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 from pathlib import Path
 
 from .build import BuildError, build_database, dump_database, migrate
 from .config import Paths, find_root, load_config
-from .export import export_all
+from .export import ExportError, export_all
 from .fetch import fetch_sheet
 from .legacy import MigrationError
 
@@ -31,12 +32,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--root", type=Path, help="repository root (default: found from cwd)")
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("build", help="build the database from data/db")
+    build = sub.add_parser("build", help="build the database from data/db")
+    build.add_argument(
+        "--force", action="store_true", help="discard edits in build/termquake.db not yet dumped"
+    )
     dump = sub.add_parser("dump", help="save the database to data/db and refresh the QA report")
     dump.add_argument(
         "--check",
         action="store_true",
         help="write nothing; fail if the committed files are not up to date",
+    )
+    dump.add_argument(
+        "--force", action="store_true", help="save even if data/db changed since the build"
     )
     sub.add_parser("export", help="write downloads and web app data")
     sub.add_parser("all", help="build + export")
@@ -59,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"(see data/legacy/MIGRATION_REPORT.md)"
             )
         if args.command in ("build", "all"):
-            r = build_database(config, paths)
+            r = build_database(config, paths, force=getattr(args, "force", False))
             published = ", ".join(f"{lang}={r.terms.get(lang, 0)}" for lang in config.languages)
             print(
                 f"built build/termquake.db: {r.concepts} entries, {sum(r.terms.values())} terms "
@@ -70,24 +77,34 @@ def main(argv: list[str] | None = None) -> int:
             export_all(config, paths)
             print("exported site/public/data/termbase.json and site/public/downloads/")
         if args.command == "dump":
-            stale = dump_database(config, paths, check=args.check)
+            result = dump_database(config, paths, check=args.check, force=args.force)
             if args.check:
-                if stale:
+                if result.stale_files:
                     print(
-                        "not up to date: "
-                        + ", ".join(stale)
+                        "not in canonical form: "
+                        + ", ".join(result.stale_files)
                         + "\nRun `termquake build && termquake dump` and commit the result.",
                         file=sys.stderr,
                     )
                     return 1
-                print("data/db and data/QA_REPORT.md are up to date")
+                if result.report_stale:
+                    # Not a failure: a data edit made on GitHub can't refresh the report.
+                    print(
+                        "warning: data/QA_REPORT.md is out of date; "
+                        "`termquake build && termquake dump` refreshes it",
+                        file=sys.stderr,
+                    )
+                print("data/db is in canonical form")
             else:
                 print("saved data/db/ and data/QA_REPORT.md; review with `git diff`, then commit")
         if args.command == "fetch-sheet":
             changed = fetch_sheet(args.sheet_id, config.tabs, args.out)
             print("changed: " + ", ".join(changed) if changed else "no changes")
-    except (BuildError, MigrationError) as exc:
+    except (BuildError, MigrationError, ExportError) as exc:
         print(f"error: {exc}", file=sys.stderr)
+        return 2
+    except sqlite3.Error as exc:
+        print(f"database error: {exc}", file=sys.stderr)
         return 2
     return 0
 

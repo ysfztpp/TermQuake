@@ -1,0 +1,2 @@
+# Data files are byte-identical on every platform (termquake dump writes LF).
+data/db/*.sql text eol=lf

@@ -11,7 +11,7 @@ import type { Entry, Filter, Language, Termbase } from "./types";
 
 const DATA_URL = `${import.meta.env.BASE_URL}data/termbase.json`;
 const PAPER_URL = "https://doi.org/10.1016/j.ijdrr.2026.106498";
-const REPO_URL = "https://github.com/ysfztpp/termquake";
+const REPO_URL = "https://github.com/ysfztpp/TermQuake";
 // Default pair per interface language: what a person using that interface most likely needs.
 const DEFAULT_PAIR: Record<UiLang, [string, string]> = { tr: ["tr", "en"], en: ["en", "tr"], es: ["es", "tr"] };
 
@@ -48,6 +48,10 @@ export function App() {
         const g = codes.includes(to) && to !== f ? to : codes.find((c) => c !== f) ?? f;
         setFrom(f);
         setTo(g);
+        // A saved domain filter that no longer exists (renamed or removed) falls back to All.
+        if (filter !== "all" && filter !== "phrases" && !data.domains.some((d) => d.code === filter)) {
+          setFilter("all");
+        }
         setDb(data);
       })
       .catch(() => setFailed(true));
@@ -68,11 +72,16 @@ export function App() {
     const target = openId === null ? location.pathname + location.search : `#/e/${openId}`;
     if (openId === null ? location.hash : location.hash !== target) history.replaceState(null, "", target);
   }, [openId]);
+  // A link to an entry that was merged into another opens the one that replaced it.
+  useEffect(() => {
+    const target = db && openId !== null ? db.moved?.[String(openId)] : undefined;
+    if (target !== undefined) setOpenId(target);
+  }, [db, openId]);
   useEffect(() => {
     if (db && openId !== null) {
       document.getElementById(`entry-${openId}`)?.closest(".row")?.scrollIntoView({ block: "nearest" });
     }
-  }, [db]);
+  }, [db, openId]);
 
   const index = useMemo(() => (db ? buildIndex(db.entries) : []), [db]);
   const lang = (code: string): Language =>
@@ -111,6 +120,7 @@ export function App() {
     { code: "phrases", label: t("phrases") },
   ];
   const showEntry = showId === null ? undefined : db.entries.find((e) => e.id === showId);
+  const missingLink = openId !== null && !deepLinked && !db.moved?.[String(openId)] && !query.trim();
   const browsing = !query.trim();
 
   return (
@@ -164,6 +174,7 @@ export function App() {
               autoComplete="off"
               autoCorrect="off"
               spellcheck={false}
+              dir="auto"
               placeholder={t("searchPlaceholder", { a: fromLang.native, b: toLang.native })}
               value={query}
               onInput={(e) => {
@@ -221,6 +232,11 @@ export function App() {
       )}
 
       <main id="results" class="results" tabIndex={-1}>
+        {missingLink && (
+          <p class="empty" role="status">
+            {t("notFound", { id: openId })}
+          </p>
+        )}
         <p class="results-count" aria-live="polite">
           {rows.length === 1 ? t("countOne") : t("count", { n: rows.length })}
         </p>

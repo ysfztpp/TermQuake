@@ -4,7 +4,7 @@ Google Sheet  ->  data/raw/*.csv  ->  SQLite (build/termquake.db)  ->  exports, 
    (sync)            (committed)          (build)                        (export)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Bump when db/schema.sql changes in a way that matters to consumers of the
 # published database. Stored in the database as PRAGMA user_version.

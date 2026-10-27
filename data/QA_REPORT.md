@@ -45,8 +45,8 @@ permanent IDs (the legacy sheet's **Nr.**). Published languages are marked ✓.
 |---|---|---:|---|
 | warning | `ambiguous_slash` | 9 | '/' without spaces: synonym, gender ending (ferido/a) or two concepts in one term? |
 | warning | `dash_separator` | 6 | ' - ' inside a term: usually an acronym or a derived form. |
-| warning | `definition_needs_review` | 1 | Definition contains a question; looks like a discussion note. Hidden on the website. |
-| warning | `definition_too_short` | 2 | Definition is very short or incomplete. Hidden on the website. |
+| warning | `definition_needs_review` | 1 | Definition contains a question; looks like a discussion note. Hidden on the website until a reviewer approves it. |
+| warning | `definition_too_short` | 2 | Definition is very short or incomplete. Hidden on the website until a reviewer approves it. |
 | warning | `duplicate_term` | 22 | Same term (ignoring case and accents) in more than one entry. In the pivot language this usually means a duplicated entry. |
 | warning | `missing_domain` | 8 | Entry has no domain. |
 | warning | `missing_pivot_term` | 3 | Entry has no term in the pivot language, so it cannot be found from it. |

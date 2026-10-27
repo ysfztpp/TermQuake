@@ -31,6 +31,11 @@ const strings = {
     tr: "“{q}” için sonuç yok. Yazımı kontrol edin, daha kısa bir sözcük deneyin ya da Tümü'nü seçin.",
     es: "No hay resultados para “{q}”. Revise la ortografía, pruebe una palabra más corta o elija Todo.",
   },
+  notFound: {
+    en: "Entry {id} does not exist (any more). Search for the term instead.",
+    tr: "{id} numaralı kayıt yok (artık). Terimi aramayı deneyin.",
+    es: "La entrada {id} no existe (ya). Busque el término.",
+  },
   missing: {
     en: "No {lang} term yet",
     tr: "Henüz {lang} karşılığı yok",

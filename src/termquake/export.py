@@ -7,8 +7,9 @@ site/public/downloads/
 site/public/data/termbase.json
     compact data for the offline web app
 
-Only languages listed in [publish] in termquake.toml are exported. Rejected
-terms and flagged definitions are never published.
+Only languages listed in [publish] in termquake.toml are exported. Never
+published: rejected terms and definitions, machine-made (MT/LLM) content that
+no reviewer has approved, and definitions the QA checks flag (unless approved).
 """
 
 from __future__ import annotations
@@ -42,6 +43,16 @@ class Entry:
     definitions: dict[str, dict]
 
 
+# What may be published (ADR 0008): never anything rejected, and machine-made
+# content (MT or LLM) only once a person has approved it.
+def publishable(t: str) -> str:
+    """SQL condition for a publishable row of table alias t (term or definition)."""
+    return (
+        f"{t}.review_status <> 'rejected' "
+        f"AND ({t}.origin NOT IN ('mt', 'llm') OR {t}.review_status = 'approved')"
+    )
+
+
 def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
     entries: dict[int, Entry] = {}
     for cid, domain, etype in conn.execute(
@@ -50,27 +61,30 @@ def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
     ):
         entries[cid] = Entry(cid, domain, etype, {}, {})
     for cid, lang, text in conn.execute(
-        "SELECT concept_id, lang, text FROM term WHERE review_status <> 'rejected' "
-        "ORDER BY concept_id, lang, sort_order"
+        f"SELECT t.concept_id, t.lang, t.text FROM term t WHERE {publishable('t')} "
+        "ORDER BY t.concept_id, t.lang, t.sort_order"
     ):
         if cid in entries and lang in languages:
             entries[cid].terms.setdefault(lang, []).append(text)
-    hidden = {
+    # Definitions the QA checks flag are held back until a reviewer approves them:
+    # an approval is a person's decision and outranks an automatic check.
+    flagged = {
         did
         for (did,) in conn.execute(
             "SELECT entity_id FROM qa_issue WHERE entity_type = 'definition' "
             "AND severity IN ('error', 'warning') AND status = 'open'"
         )
     }
-    for did, cid, lang, text, source, review in conn.execute(
-        "SELECT df.id, df.concept_id, df.lang, df.text, s.short_name, df.review_status "
+    for did, cid, lang, text, source, review, ok in conn.execute(
+        "SELECT df.id, df.concept_id, df.lang, df.text, s.short_name, df.review_status, "
+        f"({publishable('df')}) "
         "FROM definition df LEFT JOIN source s ON s.id = df.source_id ORDER BY df.concept_id, df.lang"
     ):
         if cid in entries and lang in languages:
             entries[cid].definitions[lang] = {
                 "text": text,
                 "source": source,
-                "hidden": did in hidden or review == "rejected",
+                "hidden": not ok or (did in flagged and review != "approved"),
             }
     return list(entries.values())
 
@@ -132,6 +146,12 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
 # --------------------------------------------------------------------------- CSV
 
 
+def _cell(text: str) -> str:
+    """Spreadsheet-safe cell: text starting with = + - @ is shown as text, never run
+    as a formula (OWASP CSV injection), so a term can't execute code in Excel."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
 def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
     """One row per entry. UTF-8 with BOM so Excel shows Turkish characters correctly."""
     with path.open("w", encoding="utf-8-sig", newline="") as fh:
@@ -152,8 +172,8 @@ def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
                     e.id,
                     e.domain or "",
                     e.entry_type,
-                    *[" / ".join(e.terms.get(lang, [])) for lang in config.languages],
-                    *["" if not d or d["hidden"] else d["text"] for d in defs],
+                    *[_cell(" / ".join(e.terms.get(lang, []))) for lang in config.languages],
+                    *["" if not d or d["hidden"] else _cell(d["text"]) for d in defs],
                 ]
             )
 
@@ -214,11 +234,27 @@ def write_site_json(
         ],
         "domains": [{"code": code, "label": labels} for code, labels in domain_labels.items()],
         "entries": [_entry_json(e) for e in entries if e.terms],
+        "moved": _moved(conn),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
     )
+
+
+def _moved(conn: sqlite3.Connection) -> dict[str, int]:
+    """Merged entries -> the entry that replaced them (following chains), so old links work."""
+    merged = dict(
+        conn.execute("SELECT id, merged_into FROM concept WHERE status = 'merged'").fetchall()
+    )
+    moved = {}
+    for old in merged:
+        target, seen = merged[old], {old}
+        while target in merged and target not in seen:
+            seen.add(target)
+            target = merged[target]
+        moved[str(old)] = target
+    return moved
 
 
 def _entry_json(e: Entry) -> dict:
@@ -240,11 +276,17 @@ def _entry_json(e: Entry) -> dict:
 # --------------------------------------------------------------------------- entry point
 
 
+class ExportError(RuntimeError):
+    """Nothing to export from."""
+
+
 def export_all(config: Config, paths: Paths) -> None:
+    if not paths.database.exists():  # sqlite3.connect would silently create an empty one
+        raise ExportError("build/termquake.db not found. Run `termquake build` first.")
     conn = sqlite3.connect(paths.database)
     try:
         if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
-            raise RuntimeError("Database schema version mismatch; rebuild with `termquake build`.")
+            raise ExportError("Database schema version mismatch; rebuild with `termquake build`.")
         entries = load_entries(conn, config.languages)
         downloads = paths.site_public / "downloads"
         downloads.mkdir(parents=True, exist_ok=True)

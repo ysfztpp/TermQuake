@@ -5,6 +5,8 @@ export interface Termbase {
   languages: Language[];
   domains: Domain[];
   entries: Entry[];
+  /** Entries merged into another: old id -> the id that replaced it (keeps shared links working). */
+  moved?: Record<string, number>;
 }
 
 export interface Language {

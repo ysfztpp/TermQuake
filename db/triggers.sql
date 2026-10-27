@@ -4,6 +4,11 @@
 -- as edits. Every later change to a term or definition (SQL, a script, a
 -- database GUI) is recorded in the revision table with old and new values,
 -- and saved together with the data by `termquake dump`.
+--
+-- Who made a change: an UPDATE records its author when it sets updated_by
+-- (UPDATE term SET text = '...', updated_by = <contributor id> WHERE ...).
+-- When it doesn't, the author is unknown (NULL) rather than whoever edited
+-- the row before; git history still shows who committed the change.
 -- Postgres (phase 2): replace with plpgsql triggers or an audit extension.
 -- =====================================================================
 
@@ -27,7 +32,7 @@ BEGIN
                       'term_type',OLD.term_type,'part_of_speech',OLD.part_of_speech,'note',OLD.note),
           json_object('text',NEW.text,'usage_status',NEW.usage_status,'review_status',NEW.review_status,
                       'term_type',NEW.term_type,'part_of_speech',NEW.part_of_speech,'note',NEW.note),
-          NEW.updated_by);
+          CASE WHEN NEW.updated_by IS NOT OLD.updated_by THEN NEW.updated_by END);
 END;
 
 CREATE TRIGGER trg_term_delete AFTER DELETE ON term BEGIN
@@ -51,13 +56,27 @@ BEGIN
   VALUES ('definition', NEW.id, 'update',
           json_object('text',OLD.text,'review_status',OLD.review_status),
           json_object('text',NEW.text,'review_status',NEW.review_status),
-          NEW.updated_by);
+          CASE WHEN NEW.updated_by IS NOT OLD.updated_by THEN NEW.updated_by END);
 END;
 
 CREATE TRIGGER trg_definition_delete AFTER DELETE ON definition BEGIN
   INSERT INTO revision(entity_type, entity_id, action, old_values)
   VALUES ('definition', OLD.id, 'delete',
           json_object('concept_id',OLD.concept_id,'lang',OLD.lang,'text',OLD.text));
+END;
+
+-- A term or definition imported from the sheet becomes a person's work once
+-- its text is edited (unless the same edit sets origin, e.g. an MT script).
+CREATE TRIGGER trg_term_origin AFTER UPDATE OF text ON term
+WHEN OLD.text IS NOT NEW.text AND OLD.origin = 'legacy_import' AND NEW.origin IS OLD.origin
+BEGIN
+  UPDATE term SET origin = 'human' WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER trg_definition_origin AFTER UPDATE OF text ON definition
+WHEN OLD.text IS NOT NEW.text AND OLD.origin = 'legacy_import' AND NEW.origin IS OLD.origin
+BEGIN
+  UPDATE definition SET origin = 'human' WHERE id = NEW.id;
 END;
 
 -- Keep updated_at current on every edit. These do not create revision rows:

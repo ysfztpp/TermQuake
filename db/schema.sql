@@ -10,7 +10,8 @@
 -- =====================================================================
 PRAGMA foreign_keys = ON;
 -- Canonical data: data/db/<table>.sql (see src/termquake/dbio.py).
--- qa_issue is derived: recomputed from the data on every build.
+-- Derived data is never stored there: qa_issue and term.text_norm are
+-- recomputed on every build.
 
 -- ---------------------------------------------------------------------
 -- 1. Reference tables
@@ -94,7 +95,8 @@ CREATE TABLE term (                           -- TBX: termSec
   concept_id         INTEGER NOT NULL REFERENCES concept(id) ON DELETE CASCADE,
   lang               TEXT NOT NULL REFERENCES language(code),
   text               TEXT NOT NULL,           -- the term exactly as displayed
-  text_norm          TEXT NOT NULL,           -- search key: locale-aware casefold + diacritic fold
+  text_norm          TEXT NOT NULL DEFAULT '', -- search key (casefold + diacritic fold); derived:
+                                              -- computed by `termquake build`, not stored in data/db
   sort_order         INTEGER NOT NULL DEFAULT 0,   -- order of synonyms within a language
   -- TBX-Basic termNotes (picklists from TBX-Basic v4)
   term_type          TEXT CHECK (term_type IN
@@ -221,9 +223,9 @@ CREATE INDEX idx_qa_open           ON qa_issue(status, issue_type);
 -- Language completion (replaces the % row in the sheet)
 CREATE VIEW v_language_completion AS
 SELECT l.code, l.name_en,
-       COUNT(DISTINCT t.concept_id)                                  AS concepts_covered,
+       COUNT(DISTINCT c.id)                                          AS concepts_covered,
        (SELECT COUNT(*) FROM concept WHERE status = 'active')        AS concepts_total,
-       ROUND(100.0 * COUNT(DISTINCT t.concept_id) /
+       ROUND(100.0 * COUNT(DISTINCT c.id) /
              NULLIF((SELECT COUNT(*) FROM concept WHERE status = 'active'), 0), 2) AS pct
 FROM language l
 LEFT JOIN term t    ON t.lang = l.code AND t.review_status <> 'rejected'

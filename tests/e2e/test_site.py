@@ -1,8 +1,8 @@
 """End-to-end checks of the built web app in a real browser.
 
 Run against a served build:
-    cd site && npm run build && npx vite preview --port 4173 --base /termquake/ &
-    E2E_URL=http://localhost:4173/termquake/ pytest tests/e2e
+    cd site && npm run build && npx vite preview --port 4173 --base /TermQuake/ &
+    E2E_URL=http://localhost:4173/TermQuake/ pytest tests/e2e
 
 Skipped unless E2E_URL is set, so the normal test run stays fast and offline.
 Assertions use Playwright's `expect`, which retries until the UI has updated:
@@ -84,6 +84,12 @@ def test_show_mode_opens_and_closes(app, expect):
 def test_deep_link_opens_entry(app, expect):
     app.goto(URL + "#/e/5")
     expect(app.locator("#entry-5")).to_contain_text("enkaz")
+
+
+def test_link_to_missing_entry_explains(app, expect):
+    app.goto(URL + "#/e/99999")
+    expect(app.locator("p.empty[role=status]")).to_contain_text("99999")
+    expect(app.locator(".row").first).to_be_visible()  # the list is still usable
 
 
 def test_works_offline_after_first_visit(app, expect):

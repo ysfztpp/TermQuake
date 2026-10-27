@@ -75,6 +75,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: "index.html",
+        // Opening a download by URL (or in a new tab) must reach the file, not the app.
+        navigateFallbackDenylist: [/\/downloads\//],
       },
     }),
   ],

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "termquake"
-version = "0.1.0"
+version = "0.1.1"
 description = "Data pipeline for the TermQuake disaster-relief termbase: Google Sheet -> SQLite -> exports, TBX and web app data."
 readme = "README.md"
 license = "MIT"
@@ -17,6 +17,11 @@ dependencies = [
 dev = [
   "pytest>=8",
   "ruff>=0.6",
+]
+# Browser tests (tests/e2e); pinned so the deploy check is reproducible.
+e2e = [
+  "pytest>=8",
+  "playwright==1.63.0",
 ]
 
 [project.scripts]

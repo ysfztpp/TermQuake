@@ -25,8 +25,8 @@ ISSUE_HELP = {
     "acronym_in_parentheses": "Acronym in brackets, e.g. '(CPR)'. Candidate for a separate acronym term.",
     "parenthetical": "Text in brackets may be an explanation rather than part of the term.",
     "comma_in_term": "Comma outside brackets may separate synonyms.",
-    "definition_needs_review": "Definition contains a question; looks like a discussion note. Hidden on the website.",
-    "definition_too_short": "Definition is very short or incomplete. Hidden on the website.",
+    "definition_needs_review": "Definition contains a question; looks like a discussion note. Hidden on the website until a reviewer approves it.",
+    "definition_too_short": "Definition is very short or incomplete. Hidden on the website until a reviewer approves it.",
 }
 SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
 
@@ -113,7 +113,10 @@ def run_checks(conn: sqlite3.Connection, config: Config) -> dict[str, int]:
             )
 
     # Definitions
-    for did, lang, text in conn.execute("SELECT id, lang, text FROM definition").fetchall():
+    # An approved definition was checked by a person: that decision stands.
+    for did, lang, text in conn.execute(
+        "SELECT id, lang, text FROM definition WHERE review_status <> 'approved'"
+    ).fetchall():
         for issue in definition_issues(text):
             add("definition", did, issue, lang)
     return dict(counts)
