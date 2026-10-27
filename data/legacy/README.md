@@ -8,12 +8,16 @@ sheet's xlsx export; the sheet itself was never modified), and committed here.
 
 | File | Sheet tab | Used by the migration |
 |---|---|---|
-| `terms.csv` | All Terms and Expressions /Terimler ve İfadeler | yes: entries, terms in all 31 languages |
+| `terms.csv` | All Terms and Expressions /Terimler ve İfadeler | yes: entries, terms in 30 languages (the Albanian column was empty) |
 | `definitions.csv` | Terms Needing Definition Selection | yes: definitions and their sources |
 | `term_candidates.csv` | Source Term Selection | no: archived (validator votes on candidate terms) |
 | `term_submissions.csv` | Term submission | no: archived (volunteer submissions) |
 
 What could not be imported as-is is listed in [MIGRATION_REPORT.md](MIGRATION_REPORT.md).
+
+Privacy: a reviewer comment in `definitions.csv` contained a volunteer's
+email address (a sheet @-mention). It was replaced with `[email removed]` on
+27 October 2026, after the migration; nothing else was changed.
 
 These files are a historical record. **Don't edit them**: the database in
 `data/db/` is the source of truth now. The old web app (afet-terim.web.app)
