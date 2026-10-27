@@ -35,6 +35,12 @@ def test_clean(raw, expected, fixes):
     assert clean(raw) == (expected, fixes)
 
 
+def test_clean_keeps_persian_zero_width_non_joiner():
+    # ZWNJ is part of correct Persian spelling; removing it would change the word.
+    persian = "مراقبت‌های ویژه"
+    assert clean(persian) == (persian, [])
+
+
 def test_clean_keeps_meaning():
     # Cleaning must never change letters, punctuation or case.
     assert (
