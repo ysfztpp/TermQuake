@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use TermQuake, please cite the article below."
+title: "TermQuake: disaster relief and search & rescue termbase"
+type: dataset
+license: CC-BY-NC-4.0
+repository-code: "https://github.com/ysfztpp/termquake"
+url: "https://ysfztpp.github.io/termquake/"
+authors:
+  - name: "TermQuake contributors, Department of Translation and Interpreting Studies, Boğaziçi University"
+keywords:
+  - crisis translation
+  - disaster relief terminology
+  - termbase
+  - TBX
+  - search and rescue
+preferred-citation:
+  type: article
+  title: "Crisis translation: A student-led crowdsourcing initiative of a disaster relief term-base after 2023 Türkiye-Syria earthquakes"
+  authors:
+    - family-names: "Akdoğan Özdemir"
+      given-names: "Fazilet"
+    - family-names: "Mergan"
+      given-names: "Hüseyin"
+    - family-names: "Kuralay"
+      given-names: "Abdullah Sadık"
+    - family-names: "Ergün"
+      given-names: "Ahmet"
+    - family-names: "Mulbay"
+      given-names: "Betül"
+  journal: "International Journal of Disaster Risk Reduction"
+  volume: 146
+  start: 106498
+  year: 2026
+  doi: "10.1016/j.ijdrr.2026.106498"
