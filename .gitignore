@@ -1,0 +1,14 @@
+# Build outputs (recreated by `termquake all` and `npm run build`)
+/build/
+/site/dist/
+/site/public/data/
+/site/public/downloads/
+
+# Dependencies and caches
+/site/node_modules/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.DS_Store
