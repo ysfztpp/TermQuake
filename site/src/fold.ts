@@ -10,13 +10,16 @@
 // they are part of the letter and are kept.
 const ACCENT_SCRIPTS_END = 0x0800;
 const NONSPACING_MARK = /\p{Mn}/u;
+const FORMAT_CHARS = /\p{Cf}/gu;
 const NON_WORD = /[^\p{L}\p{N}\p{M}]+/gu;
 const SPACES = /\s+/g;
 
 export function fold(text: string): string {
   let stripped = "";
   let base = 0;
-  for (const ch of text.normalize("NFKD")) {
+  // Format characters (ZWNJ, ZWJ, ...) are dropped, not turned into spaces, so
+  // Persian "مراقبت‌های" (with ZWNJ) and "مراقبتهای" (typed without it) match.
+  for (const ch of text.normalize("NFKD").replace(FORMAT_CHARS, "")) {
     if (NONSPACING_MARK.test(ch)) {
       if (base < ACCENT_SCRIPTS_END) continue;
     } else {

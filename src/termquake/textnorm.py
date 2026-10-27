@@ -18,8 +18,11 @@ from __future__ import annotations
 import re
 import unicodedata
 
-# Zero-width and formatting characters that sneak in from copy-paste.
-_INVISIBLE = re.compile("[​‌‍⁠﻿­]")
+# Invisible characters that sneak in from copy-paste and carry no meaning:
+# zero-width space, word joiner, byte-order mark, soft hyphen.
+# NOT zero-width (non-)joiners (U+200C/U+200D): they are part of correct
+# spelling in Persian, Kurdish (Sorani), Indic scripts and emoji.
+_INVISIBLE = re.compile("[​⁠﻿­]")
 # "İ" lower-cased by a non-Turkish-aware tool becomes "i" + combining dot
 # above (U+0307), which looks right but breaks search ("i̇ç" != "iç").
 _BROKEN_DOTTED_I = re.compile("i̇")
@@ -54,6 +57,9 @@ def fold(text: str) -> str:
     "Sargı Bezi" -> "sargi bezi";  "İÇ ORGANLAR" -> "ic organlar";  "réplica" -> "replica"
     """
     s = unicodedata.normalize("NFKD", text)
+    # Format characters (ZWNJ, ZWJ, ...) are dropped, not turned into spaces, so
+    # Persian "مراقبت‌های" (with ZWNJ) and "مراقبتهای" (typed without it) match.
+    s = "".join(ch for ch in s if unicodedata.category(ch) != "Cf")
     s = _strip_accents(s)
     s = s.replace("ı", "i").lower().replace("ß", "ss").replace("ς", "σ")
     # Letters, numbers and remaining marks form words; everything else separates words.
