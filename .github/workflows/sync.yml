@@ -1,0 +1,84 @@
+# Mirrors the Google Sheet into data/raw every night (and on demand).
+# If anything changed, it rebuilds the exports, commits both with a dated
+# message (that commit IS the version history of the terminology), and
+# redeploys the site. If the sheet is broken, the build fails, nothing is
+# committed, and the site keeps serving the last good version.
+name: Sync from Google Sheet
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # 05:17 Istanbul time, daily
+  workflow_dispatch:
+    inputs:
+      allow_large_change:
+        description: Allow the number of entries to drop by more than 10% (only after checking the sheet)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install .
+
+      - name: Download sheet
+        run: termquake sync
+
+      - name: Build and export (fails on a broken sheet)
+        run: termquake all
+
+      - name: Guard against accidental mass deletion
+        if: ${{ !inputs.allow_large_change }}
+        run: |
+          if git cat-file -e HEAD:data/export/concepts.tsv 2>/dev/null; then
+            old=$(git show HEAD:data/export/concepts.tsv | wc -l)
+            new=$(wc -l < data/export/concepts.tsv)
+            echo "entries before: $((old - 1)), after: $((new - 1))"
+            if [ "$new" -lt $(( old * 9 / 10 )) ]; then
+              echo "::error::Entries dropped by more than 10%. Check the sheet; if intended, re-run with allow_large_change."
+              exit 1
+            fi
+          fi
+
+      - name: Commit snapshot
+        id: commit
+        run: |
+          git add data/raw data/export
+          if git diff --cached --quiet; then
+            echo "No changes in the sheet."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          {
+            echo "data: sync from Google Sheet ($(date -u +%Y-%m-%d))"
+            echo
+            git diff --cached --stat -- data/export
+          } > /tmp/msg
+          git commit -F /tmp/msg
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: main
