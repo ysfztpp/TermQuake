@@ -1,5 +1,5 @@
-# Runs on every pull request and push: proves the pipeline and the web app
-# still work before anything reaches the public site.
+# Runs on every pull request and push: proves the database, the pipeline and
+# the web app are consistent before anything reaches the public site.
 name: CI
 
 on:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   pipeline:
-    name: Data pipeline (lint + tests)
+    name: Pipeline (lint + tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,6 +29,21 @@ jobs:
       - run: ruff check src tests
       - run: ruff format --check src tests
       - run: pytest
+
+  database:
+    name: Database (builds, canonical, QA report up to date)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install .
+      - name: Build the database from data/db
+        run: termquake build
+      - name: Committed files are exactly what `termquake dump` writes
+        run: termquake dump --check
 
   site:
     name: Web app (types + unit tests)

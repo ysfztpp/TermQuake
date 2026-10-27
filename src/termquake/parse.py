@@ -13,7 +13,7 @@ So the importer is deliberately conservative: it only splits the one case
 that is unambiguous ("/" with a space on at least one side, outside
 expressions) and keeps everything else verbatim, recording an issue so a
 human (or a reviewed AI pass) can resolve it. Nothing is ever dropped: the
-untouched cell is also stored in import_raw.
+untouched cell is also kept in the legacy snapshot (data/legacy/).
 """
 
 from __future__ import annotations
@@ -83,11 +83,11 @@ def parse_cell(raw: str, *, is_phrase: bool) -> ParsedCell:
             result.issues.append(Issue("info", "duplicate_in_cell", part))
             continue
         seen.add(part)
-        result.terms.append(ParsedTerm(part, _term_issues(part, is_phrase=is_phrase)))
+        result.terms.append(ParsedTerm(part, term_issues(part, is_phrase=is_phrase)))
     return result
 
 
-def _term_issues(term: str, *, is_phrase: bool) -> list[Issue]:
+def term_issues(term: str, *, is_phrase: bool) -> list[Issue]:
     issues: list[Issue] = []
     if not is_phrase and _TIGHT_SLASH.search(term):
         issues.append(

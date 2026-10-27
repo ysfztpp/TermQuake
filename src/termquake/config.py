@@ -30,15 +30,22 @@ class Paths:
 
     @property
     def db_dir(self) -> Path:
+        """Schema, seed data and triggers (code)."""
         return self.root / "db"
 
     @property
-    def raw(self) -> Path:
-        return self.root / "data" / "raw"
+    def data_db(self) -> Path:
+        """The database's canonical content, one SQL file per table (data)."""
+        return self.root / "data" / "db"
 
     @property
-    def export(self) -> Path:
-        return self.root / "data" / "export"
+    def legacy(self) -> Path:
+        """Frozen snapshot of the legacy Google Sheet."""
+        return self.root / "data" / "legacy"
+
+    @property
+    def qa_report(self) -> Path:
+        return self.root / "data" / "QA_REPORT.md"
 
     @property
     def build(self) -> Path:
@@ -55,21 +62,17 @@ class Paths:
 
 @dataclass(frozen=True)
 class Config:
-    sheet_id: str
-    tabs: dict[str, str]  # sheet tab name -> raw file stem
     languages: list[str]  # published language codes, in display order
     pivot: str
+    legacy_sheet_id: str
+    tabs: dict[str, str]  # legacy sheet tab name -> snapshot file stem
     columns: dict[str, str]  # English language name -> code
     domains: dict[str, str]  # domain label -> domain code
     phrase_labels: list[str]
 
     @property
-    def export_url(self) -> str:
-        return f"https://docs.google.com/spreadsheets/d/{self.sheet_id}/export?format=xlsx"
-
-    @property
-    def sheet_url(self) -> str:
-        return f"https://docs.google.com/spreadsheets/d/{self.sheet_id}"
+    def legacy_sheet_url(self) -> str:
+        return f"https://docs.google.com/spreadsheets/d/{self.legacy_sheet_id}"
 
 
 def load_config(path: Path | None = None) -> Config:
@@ -81,17 +84,13 @@ def load_config(path: Path | None = None) -> Config:
     pivot = raw["publish"].get("pivot", languages[0])
     if pivot not in languages:
         raise ValueError(f"publish.pivot '{pivot}' must be one of publish.languages")
-    codes = set(raw["columns"].values())
-    missing = [code for code in languages if code not in codes]
-    if missing:
-        raise ValueError(f"publish.languages {missing} have no column mapping in [columns]")
-
+    legacy = raw["legacy"]
     return Config(
-        sheet_id=raw["sheet"]["id"],
-        tabs=dict(raw["sheet"]["tabs"]),
         languages=languages,
         pivot=pivot,
-        columns=dict(raw["columns"]),
-        domains=dict(raw["domains"]),
-        phrase_labels=list(raw["entry_types"]["phrase_labels"]),
+        legacy_sheet_id=legacy["sheet_id"],
+        tabs=dict(legacy["tabs"]),
+        columns=dict(legacy["columns"]),
+        domains=dict(legacy["domains"]),
+        phrase_labels=list(legacy["entry_types"]["phrase_labels"]),
     )

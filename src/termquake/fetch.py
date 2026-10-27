@@ -1,28 +1,24 @@
-"""Download the Google Sheet and mirror selected tabs into data/raw/*.csv.
+"""Download a Google Sheet (read-only) and save selected tabs as CSV.
 
-The sheet is public ("anyone with the link can view"), so the plain xlsx
-export works without an API key: no secrets to store or leak. One request
-returns every tab at once, which keeps tab IDs (gid) out of the config.
+Used once to snapshot the legacy sheet into data/legacy/ before the
+migration. Normal work never calls this: the SQL database is the source of
+truth. Kept for re-importing from a *copy* of the sheet if ever needed
+(`termquake fetch-sheet --sheet-id <ID of the copy>`).
 
-The CSV snapshot is the hand-off point between the network (unreliable,
-changes any time) and the build (deterministic, testable offline). It is
-committed to git, so every change anyone makes in the sheet becomes a
-readable, dated diff in the repository history.
+The xlsx export of a sheet shared as "anyone with the link can view" needs no
+API key and returns every tab in one request. Downloading never modifies the sheet.
 """
 
 from __future__ import annotations
 
 import csv
 import datetime as dt
-import hashlib
 import io
 import re
 import urllib.request
 from pathlib import Path
 
 from openpyxl import load_workbook
-
-from .config import Config
 
 USER_AGENT = "TermQuake-sync/1.0 (+https://github.com/ysfztpp/termquake)"
 
@@ -109,24 +105,16 @@ def _rows_to_csv(rows: list[list[str]]) -> str:
     return buf.getvalue()
 
 
-def sync(config: Config, raw_dir: Path) -> list[str]:
-    """Fetch the sheet and write snapshots. Returns the list of files that changed."""
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    csvs = workbook_to_csvs(download_xlsx(config.export_url), config.tabs)
+def fetch_sheet(sheet_id: str, tabs: dict[str, str], out_dir: Path) -> list[str]:
+    """Download a sheet and write <out_dir>/<stem>.csv per tab. Returns files that changed."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=xlsx"
+    csvs = workbook_to_csvs(download_xlsx(url), tabs)
     changed: list[str] = []
     for stem, text in csvs.items():
-        path = raw_dir / f"{stem}.csv"
+        path = out_dir / f"{stem}.csv"
         old = path.read_text(encoding="utf-8") if path.exists() else None
         if old != text:
             path.write_text(text, encoding="utf-8")
             changed.append(path.name)
     return changed
-
-
-def snapshot_digest(raw_dir: Path) -> str:
-    """Stable fingerprint of the raw snapshot, used as the data version."""
-    h = hashlib.sha256()
-    for path in sorted(raw_dir.glob("*.csv")):
-        h.update(path.name.encode())
-        h.update(path.read_bytes())
-    return h.hexdigest()[:12]

@@ -1,26 +1,21 @@
-# Builds the database, exports and web app from the committed snapshot,
-# tests the result in a real browser (including offline), then publishes
-# it to GitHub Pages. Nothing is published if any step fails.
+# Builds the database from data/db, publishes the downloads and the web app,
+# tests the result in a real browser (including offline), then deploys to
+# GitHub Pages. Nothing is published if any step fails.
 name: Deploy site
 
 on:
   push:
     branches: [main]
     paths:
-      - "site/**"
-      - "src/**"
+      - "data/db/**"
       - "db/**"
-      - "data/raw/**"
+      - "src/**"
+      - "site/**"
+      - "tests/e2e/**"
       - "termquake.toml"
       - "pyproject.toml"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      ref:
-        description: Git ref to deploy (the sync workflow passes main, after its own commit)
-        type: string
-        required: false
 
 permissions:
   contents: read
@@ -39,16 +34,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref || github.sha }}
-          fetch-depth: 0 # the "data updated" date comes from the history of data/raw
+          fetch-depth: 0 # the "data updated" date comes from the history of data/db
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
       - run: pip install .
-      - name: Fetch the sheet if no snapshot is committed yet (first deploy only)
-        run: test -f data/raw/terms.csv || termquake sync
-      - name: Build database, exports and downloads
+      - name: Build database, downloads and web app data
         run: termquake all
 
       - uses: actions/setup-node@v7
