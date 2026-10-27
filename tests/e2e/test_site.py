@@ -71,8 +71,14 @@ def test_show_mode_opens_and_closes(app, expect):
     dialog = app.locator(".show")
     expect(dialog).to_be_visible()
     expect(dialog.locator(".show-main")).not_to_be_empty()
+    # Focus moves into the dialog (keyboard and screen-reader users land on Close).
+    expect(dialog.locator(".icon-button")).to_be_focused()
+    app.keyboard.press("Tab")  # focus stays trapped inside the dialog
+    assert app.evaluate("document.querySelector('.show').contains(document.activeElement)")
     app.keyboard.press("Escape")
     expect(dialog).to_have_count(0)
+    # Focus returns to the button that opened it.
+    expect(app.locator(".detail .button--primary")).to_be_focused()
 
 
 def test_deep_link_opens_entry(app, expect):
