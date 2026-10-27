@@ -1,22 +1,16 @@
 # 0002. Keep the sheet for editing; build SQLite from a committed snapshot
 
-**Status:** accepted, October 2026
+**Status:** superseded by [0009](0009-sql-database-is-source-of-truth.md), 27 October 2026
 
 ## Context
 More than a hundred volunteers know the Google Sheet. Moving editing to a new
-tool on day one would stall contributions, and a hosted database needs
-accounts, maintenance and money.
+tool on day one could stall contributions.
 
-## Decision
-Phase 1: the sheet stays the place where people edit. A nightly job downloads
-it (public xlsx export, no API key) and commits the selected tabs as CSV in
-`data/raw/`. The SQLite database is a build artifact, recreated from that
-snapshot with `db/schema.sql`. The schema is written to port to PostgreSQL
-(phase 2) without redesign.
+## Decision (original)
+The sheet stays the place where people edit; a nightly job snapshots it into
+git and the SQLite database is rebuilt from that snapshot.
 
-## Consequences
-- Zero hosting cost and nothing to keep running; builds are reproducible from any commit.
-- Structure the sheet can't express (usage status, term types) can only be
-  added once editing moves to the database (phase 2).
-- Renaming tabs or columns in the sheet breaks the sync loudly (by design);
-  fix `termquake.toml`.
+## Why it was replaced
+The technical lead decided the SQL database should be the master from the
+start, and that automated jobs should not touch the production sheet at all.
+The snapshot taken on 27 October 2026 became a one-time migration instead.

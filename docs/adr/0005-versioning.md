@@ -1,21 +1,21 @@
-# 0005. Version history: git snapshots, data releases, revision log
+# 0005. Version history: git, revision log, data releases
 
-**Status:** accepted, October 2026
+**Status:** accepted, October 2026 (updated for 0009)
 
 ## Context
 The team wants a full history of the terminology and citable versions for
 research, without extra infrastructure.
 
 ## Decision
-1. Commit `data/raw` and `data/export` on every sync that changes something.
-   Exports are sorted and timestamp-free so diffs show only real changes.
-2. Tag `data-vX.Y.Z` to publish a GitHub Release with the database, TBX and
-   CSV (connect Zenodo to mint a DOI per release).
-3. Keep a `revision` table filled by database triggers, for phase 2 when edits
-   happen in the database. Triggers are installed after the bulk import, so a
-   rebuild doesn't log fake edits.
+1. **Git history of `data/db/`.** Every saved change is a commit; files are
+   sorted and one row per line, so diffs show exactly the rows that changed.
+2. **`revision` table** filled by database triggers with old and new values of
+   every term and definition change, saved with the data by `termquake dump`.
+   Triggers are installed after loading, so a rebuild never logs fake edits.
+3. **Data releases.** A tag `data-vX.Y.Z` publishes the database, TBX and CSV
+   as a GitHub Release (connect Zenodo to mint a DOI per release).
 
 ## Consequences
-- "What did entry 41 say in March?" is answered by `git log -p`.
-- History of who edited inside the sheet is not captured (the sheet's own
-  version history still has it); per-person history starts in phase 2.
+- "What did entry 41 say in March?" is answered by `git log -p data/db/term.sql`
+  or by querying `revision`.
+- The revision log moves with the data if the database later runs on PostgreSQL.

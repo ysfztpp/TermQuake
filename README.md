@@ -1,10 +1,10 @@
 # TermQuake
 
-Disaster-relief and search & rescue terminology for volunteer interpreters, in
-**English, Turkish and Spanish** (more languages coming). Works offline on any
-phone once opened.
+Disaster-relief and search & rescue terminology for volunteer interpreters.
+The database holds 31 languages; the website currently publishes **English,
+Turkish and Spanish**, and works offline on any phone once opened.
 
-**Use it:** <https://ysfztpp.github.io/termquake/>
+**Use it:** <https://ysfztpp.github.io/TermQuake/>
 
 TermQuake was started by translation students at Boğaziçi University after the
 6 February 2023 Türkiye–Syria earthquakes and grew with volunteer translators,
@@ -15,68 +15,82 @@ interpreters and developers. The project is described in
 
 ```mermaid
 flowchart LR
-  A[Google Sheet<br/>team edits here] -->|nightly sync| B[data/raw/*.csv<br/>committed snapshot]
-  B -->|termquake build| C[(SQLite<br/>termbase)]
-  C -->|termquake export| D[data/export<br/>TSV + QA report]
-  C --> E[Downloads<br/>TBX · CSV · SQLite]
-  C --> F[termbase.json]
-  F --> G[Offline web app<br/>GitHub Pages]
+  L[data/legacy<br/>frozen sheet snapshot] -. one-time migrate .-> D
+  D[data/db/*.sql<br/>THE DATABASE<br/>versioned in git] -->|termquake build| B[(build/termquake.db<br/>SQLite)]
+  B -->|edit: SQL, scripts, GUI| B
+  B -->|termquake dump| D
+  B -->|termquake export| E[TBX · CSV · SQLite<br/>downloads]
+  B --> F[Offline web app<br/>GitHub Pages]
 ```
 
-1. **Terminologists keep editing the Google Sheet**, exactly as before.
-2. Every night a GitHub Action downloads the sheet, rebuilds the database,
-   checks data quality and, if anything changed, commits a dated snapshot and
-   redeploys the site. Every change to the terminology is therefore recorded in
-   this repository's history.
-3. The site is static and fully offline after the first visit: it never
-   depends on a server being up during a disaster.
+- **The SQL database is the source of truth.** Its content lives in
+  [`data/db/`](data/db/) as plain SQL, one file per table, one row per line.
+  Every change is a reviewed commit, so the full history of every term is in git.
+- **The old Google Sheet is no longer used.** It was migrated once on
+  27 October 2026 (read-only); the snapshot is kept in [`data/legacy/`](data/legacy/).
+- **Every push rebuilds and redeploys**: CI checks the database builds, is
+  canonical and passes tests; the site is rebuilt, tested in a browser
+  (including offline) and published to GitHub Pages.
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
 data model: [docs/DATA_MODEL.md](docs/DATA_MODEL.md) ·
-why things are the way they are: [docs/adr/](docs/adr/).
+why things are the way they are: [docs/adr/](docs/adr/) ·
+current data quality: [data/QA_REPORT.md](data/QA_REPORT.md).
 
-## For the terminology team
+## Working with the data
 
-- **Fix a term:** edit the Google Sheet. The site updates the next morning
-  (or immediately: Actions → *Sync from Google Sheet* → *Run workflow*).
-- **See what needs fixing:** [data/export/QA_REPORT.md](data/export/QA_REPORT.md)
-  lists placeholders, duplicates, ambiguous separators and more, by entry number.
-- **Don't** rename columns or tabs, or change the *Nr.* of an existing row:
-  entry numbers are permanent IDs used in links and citations.
-
-## For developers
-
-Requirements: Python 3.11+, Node 20+.
+Requirements: Python 3.11+ (and Node 20+ for the web app).
 
 ```bash
-pip install -e ".[dev]"      # data pipeline
-termquake sync               # download the sheet into data/raw/
-termquake all                # build build/termquake.db and all exports
-pytest                       # pipeline tests
+pip install -e ".[dev]"
+termquake build            # data/db/*.sql -> build/termquake.db
+```
 
-cd site
-npm ci
-npm run dev                  # web app on http://localhost:5173
+Edit `build/termquake.db` any way you like:
+
+- SQL: `sqlite3 build/termquake.db "UPDATE term SET text='enkaz' WHERE id=42"`
+- a GUI such as [DB Browser for SQLite](https://sqlitebrowser.org/) (spreadsheet-like)
+- a Python script (e.g. AI-assisted gap filling; see [ADR 0008](docs/adr/0008-provenance-before-ai.md))
+
+Then save and review:
+
+```bash
+termquake dump             # build/termquake.db -> data/db/*.sql + data/QA_REPORT.md
+git diff data/             # every changed row is one changed line
+git commit -am "Fix Turkish term for entry 42"   # or open a pull request
+```
+
+Every edit is also recorded inside the database (`revision` table: old value,
+new value, time), and saved with the data.
+
+## Web app
+
+```bash
+termquake all              # build + downloads + site/public/data/termbase.json
+cd site && npm ci && npm run dev     # http://localhost:5173
 npm test && npm run typecheck
 ```
 
+## Repository map
+
 | Path | What it is |
 |---|---|
-| `termquake.toml` | Sheet ID, tabs, published languages, column and domain mapping |
-| `db/` | SQL schema (TBX-Basic / ISO 16642 model), seed data, history triggers |
-| `src/termquake/` | Pipeline: `fetch` (sync) → `parse`/`build` (SQLite) → `export` |
-| `data/raw/` | Committed snapshot of the sheet (written by the sync job) |
-| `data/export/` | Committed, diff-friendly exports and the QA report |
+| `data/db/` | **The database content** (SQL, one file per table) |
+| `data/QA_REPORT.md` | Coverage per language and data-quality worklist (regenerated by `dump`) |
+| `data/legacy/` | Frozen snapshot of the old Google Sheet + migration report |
+| `db/` | Schema (TBX-Basic / ISO 16642 model), seed data, history triggers |
+| `src/termquake/` | CLI: `build`, `dump`, `export`, `migrate`, QA checks |
 | `site/` | Offline web app (Preact + TypeScript + Vite, PWA) |
 | `tests/` | Pipeline tests, shared search-folding cases, browser tests |
-| `.github/workflows/` | CI, nightly sync, deploy to Pages, data releases |
+| `termquake.toml` | Published languages, legacy sheet mapping |
+| `.github/workflows/` | CI, deploy to Pages, data releases |
 
-**Adding a language:** add its code to `publish.languages` in
-`termquake.toml`, run `termquake all`, review its section of the QA report,
-open a pull request.
+**Publishing another language:** add its code to `[publish] languages` in
+`termquake.toml` (all 31 are already in the database), check its section of
+the QA report, commit.
 
-**Publishing a citable data version:** `git tag data-v1.0.0 && git push --tags`.
-The release workflow attaches the database, TBX and CSV files.
+**Citable data version:** `git tag data-v1.0.0 && git push --tags` attaches
+the database, TBX and CSV to a GitHub Release.
 
 ## Licences
 
