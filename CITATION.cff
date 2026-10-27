@@ -3,8 +3,8 @@ message: "If you use TermQuake, please cite the article below."
 title: "TermQuake: disaster relief and search & rescue termbase"
 type: dataset
 license: CC-BY-NC-4.0
-repository-code: "https://github.com/ysfztpp/termquake"
-url: "https://ysfztpp.github.io/termquake/"
+repository-code: "https://github.com/ysfztpp/TermQuake"
+url: "https://ysfztpp.github.io/TermQuake/"
 authors:
   - name: "TermQuake contributors, Department of Translation and Interpreting Studies, Boğaziçi University"
 keywords:

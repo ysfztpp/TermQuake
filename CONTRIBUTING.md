@@ -2,49 +2,66 @@
 
 ## Terminology (no coding needed)
 
-- **Correct or add terms in the Google Sheet.** The website picks up changes
-  in the nightly sync.
 - **Report a problem** with an entry: use "Report a problem with this entry"
   on the website, or open an issue with the *Term correction* template.
-- **Work through the QA report**: [data/export/QA_REPORT.md](data/export/QA_REPORT.md)
-  lists every flagged entry by its Nr.
+- **See what needs work**: [data/QA_REPORT.md](data/QA_REPORT.md) lists
+  coverage per language and every flagged entry by number.
 
-Please don't rename tabs or columns, and never change the Nr. of an existing
-row: it is the entry's permanent ID.
+The Google Sheet is no longer the database (see `docs/adr/0009`). Corrections
+go into the SQL database, through an issue or a pull request.
 
-## Code
-
-1. Create a branch from `main` and open a pull request; CI must pass
-   (lint, pipeline tests, web app type check and tests).
-2. Keep changes small and explain *why* in the PR description.
-3. If you change a design decision, add a record in `docs/adr/`.
-4. Commit messages: short imperative summary (`Add Kurdish to the pilot`,
-   `Fix acronym detection for Turkish capitals`). The sync bot uses the prefix `data:`.
-
-### Setup
+## Editing the database
 
 ```bash
 pip install -e ".[dev]"
-termquake sync && termquake all
-pytest && ruff check src tests && ruff format --check src tests
+termquake build                 # data/db/*.sql -> build/termquake.db
+```
 
-cd site && npm ci && npm run dev
-npm test && npm run typecheck
+Edit `build/termquake.db` with SQL (`sqlite3`), a GUI such as
+[DB Browser for SQLite](https://sqlitebrowser.org/), or a script. Then:
+
+```bash
+termquake dump                  # saves data/db/*.sql and data/QA_REPORT.md
+git diff data/                  # check: only the rows you meant to change
+```
+
+Commit on a branch and open a pull request. CI rebuilds the database, checks
+the files are canonical (`termquake dump --check`) and runs the tests. Merging
+to `main` redeploys the website.
+
+Rules that keep the data trustworthy:
+
+- Never renumber entries (`concept.id`) or terms (`term.id`): they are
+  permanent IDs used in links and citations.
+- Never hand-edit `data/db/*.sql` for anything but trivial fixes; edit the
+  database and `dump`. (A build fails if a hand edit leaves a search key stale.)
+- Machine-generated content must be written with `origin = 'mt'` or `'llm'`,
+  `origin_detail` (model, prompt version) and `review_status = 'proposed'`
+  (see `docs/adr/0008`).
+- Set `updated_by` to your `contributor` id when you can, so the revision log
+  says who changed what.
+
+## Code
+
+1. Branch from `main`, open a pull request; CI must pass.
+2. Keep changes small and explain *why* in the description.
+3. If you change a design decision, add a record in `docs/adr/`.
+4. Commit messages: short imperative summary (`Publish Kurdish`, `Fix acronym
+   detection for Turkish capitals`).
+
+```bash
+pytest && ruff check src tests && ruff format --check src tests
+cd site && npm ci && npm test && npm run typecheck && npm run dev
 ```
 
 Browser tests (need a built site and Playwright):
 
 ```bash
-cd site && npm run build && npx vite preview --port 4173 --base /termquake/ &
+termquake all && (cd site && npm run build)
+(cd site && npx vite preview --port 4173 --base /TermQuake/ &)
 pip install playwright && python -m playwright install chromium
-E2E_URL=http://localhost:4173/termquake/ pytest tests/e2e
+E2E_URL=http://localhost:4173/TermQuake/ pytest tests/e2e
 ```
 
-### Rules that keep the data trustworthy
-
-- Never commit generated files except `data/raw/` and `data/export/`
-  (the sync job owns those).
-- Anything machine-generated must be written with `origin = 'mt'` or `'llm'`
-  and `review_status = 'proposed'` (see `docs/adr/0008`).
-- Search folding lives in two places (`src/termquake/textnorm.py`,
-  `site/src/fold.ts`); change both and `tests/shared/fold_cases.json` together.
+Search folding lives in two places (`src/termquake/textnorm.py`,
+`site/src/fold.ts`); change both and `tests/shared/fold_cases.json` together.
