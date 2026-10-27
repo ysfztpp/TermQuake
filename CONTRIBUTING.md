@@ -27,19 +27,26 @@ git diff data/                  # check: only the rows you meant to change
 
 Commit on a branch and open a pull request. CI rebuilds the database, checks
 the files are canonical (`termquake dump --check`) and runs the tests. Merging
-to `main` redeploys the website.
+to `main` runs the same checks again, then redeploys the website.
+
+If you pulled new commits since your last build, run `termquake build` before
+editing. `build` won't discard edits you haven't dumped, and `dump` won't
+overwrite changes it didn't load; both say what to do (`--force` overrides).
 
 Rules that keep the data trustworthy:
 
 - Never renumber entries (`concept.id`) or terms (`term.id`): they are
   permanent IDs used in links and citations.
-- Never hand-edit `data/db/*.sql` for anything but trivial fixes; edit the
-  database and `dump`. (A build fails if a hand edit leaves a search key stale.)
+- Hand-edit `data/db/*.sql` (e.g. in GitHub's web editor) only for small
+  fixes inside a line; for anything bigger, edit the database and `dump`.
+  Search keys are computed by the build, so a hand edit can't leave one stale.
 - Machine-generated content must be written with `origin = 'mt'` or `'llm'`,
   `origin_detail` (model, prompt version) and `review_status = 'proposed'`
-  (see `docs/adr/0008`).
-- Set `updated_by` to your `contributor` id when you can, so the revision log
-  says who changed what.
+  (see `docs/adr/0008`). It is published only once a person sets
+  `review_status = 'approved'`.
+- Set `updated_by` to your `contributor` id in every UPDATE, so the revision
+  log says who changed what. Without it the author is recorded as unknown
+  (git still shows who committed).
 
 ## Code
 
@@ -59,7 +66,7 @@ Browser tests (need a built site and Playwright):
 ```bash
 termquake all && (cd site && npm run build)
 (cd site && npx vite preview --port 4173 --base /TermQuake/ &)
-pip install playwright && python -m playwright install chromium
+pip install -e ".[e2e]" && python -m playwright install chromium
 E2E_URL=http://localhost:4173/TermQuake/ pytest tests/e2e
 ```
 

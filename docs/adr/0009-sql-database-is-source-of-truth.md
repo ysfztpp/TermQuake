@@ -11,7 +11,8 @@ and the public tool must never depend on a running server.
 ## Decision
 - The legacy sheet was downloaded once, read-only, on 27 October 2026
   (`data/legacy/`), and migrated with `termquake migrate` into the SQL
-  database, including all 31 languages, not only the three published ones.
+  database, including every language column (30 with terms), not only the
+  three published ones.
 - The database content lives in `data/db/` as plain SQL: one file per table,
   one INSERT per row, ordered by primary key. `termquake build` creates a
   SQLite database from it; `termquake dump` writes edits back. CI fails if the

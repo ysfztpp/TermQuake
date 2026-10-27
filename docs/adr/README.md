@@ -11,7 +11,7 @@ don't rewrite old ones.
 | [0002](0002-sheet-snapshot-and-sqlite.md) | ~~Keep the sheet for editing~~ (superseded by 0009) |
 | [0003](0003-static-offline-site.md) | Static, offline-first web app on GitHub Pages |
 | [0004](0004-conservative-lossless-import.md) | Conservative, lossless import with a QA worklist |
-| [0005](0005-versioning.md) | Version history: git snapshots, data releases, revision log |
+| [0005](0005-versioning.md) | Version history: git history of `data/db`, revision log, data releases |
 | [0006](0006-web-stack.md) | Preact + TypeScript + Vite, Atkinson Hyperlegible |
 | [0007](0007-shared-search-folding.md) | One search-folding rule, tested in both languages |
 | [0008](0008-provenance-before-ai.md) | Provenance and review status before any AI-generated content |

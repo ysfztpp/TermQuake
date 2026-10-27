@@ -12,9 +12,10 @@ invisible characters and broken Turkish dotted-i.
 ## Decision
 Split only the unambiguous case (a "/" with a space on at least one side,
 never in expressions). Keep everything else verbatim and record a `qa_issue`
-with a severity. Repair only pure encoding damage automatically. Store every
-original cell in `import_raw`. Publish the findings as
-`data/export/QA_REPORT.md`, by entry number.
+with a severity. Repair only pure encoding damage automatically. Keep every
+original cell (as committed CSV in `data/legacy/`; an earlier draft used an
+`import_raw` table). Publish the findings as `data/QA_REPORT.md`, by entry
+number.
 
 ## Consequences
 - Nothing a volunteer wrote is silently lost or reinterpreted.

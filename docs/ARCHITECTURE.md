@@ -32,7 +32,7 @@ flowchart TB
   end
   subgraph CI["GitHub Actions"]
     C[CI: build, dump --check, tests]
-    P[Deploy: export, browser tests]
+    P[Deploy: same checks, export, browser tests]
   end
   subgraph Public["Public, static"]
     W[Offline web app<br/>GitHub Pages]
@@ -51,9 +51,9 @@ flowchart TB
 
 | Command | Does | Writes |
 |---|---|---|
-| `termquake build` | Creates the SQLite database from schema + `data/db`, installs history triggers, runs QA checks | `build/termquake.db` |
-| `termquake dump` | Saves the (edited) database back as canonical SQL, refreshes the QA report | `data/db/*.sql`, `data/QA_REPORT.md` |
-| `termquake dump --check` | Fails if the committed files are not exactly what `dump` would write | nothing |
+| `termquake build` | Creates the SQLite database from schema + `data/db`, computes search keys, installs history triggers, runs QA checks. Refuses to discard edits not yet dumped (`--force` overrides) | `build/termquake.db` |
+| `termquake dump` | Saves the (edited) database back as canonical SQL, refreshes the QA report. Refuses if `data/db` changed since the build, or if a reference is broken (`--force` overrides the first) | `data/db/*.sql`, `data/QA_REPORT.md` |
+| `termquake dump --check` | Fails if the committed files are not exactly what `dump` would write; warns if the QA report is out of date | nothing |
 | `termquake export` | Publishes downloads and web app data | `site/public/…` |
 | `termquake migrate` | One-time: legacy sheet snapshot → `data/db` (refuses to overwrite) | `data/db`, `data/legacy/MIGRATION_REPORT.md` |
 
@@ -71,7 +71,12 @@ text in git gives, at no cost:
 - **portability**: the same schema and SQL load into PostgreSQL when phase 2 needs it.
 
 The built SQLite file is a working copy, like a compiled program: it's never
-committed, and it's rebuilt from `data/db` in under a second.
+committed, and it's rebuilt from `data/db` in under a second. It remembers
+which files it was built from, which is how `build` and `dump` notice when one
+would overwrite the other's changes.
+
+Only source data is stored in `data/db`. Anything computable from it (search
+keys, QA findings) is recomputed on every build, so it can never go stale.
 
 ## Versioning, three layers
 
@@ -96,12 +101,18 @@ committed, and it's rebuilt from `data/db` in under a second.
 - **No secrets** anywhere in the repository or workflows.
 - **Nothing reaches the public site unless** the database builds, the
   committed files are canonical, all tests pass, and the built site passes
-  browser tests (search, deep links, full-screen view, offline).
+  browser tests (search, deep links, full-screen view, offline). The deploy
+  workflow runs these checks itself, so it never relies on another run.
+- **What is published**: rejected content never; machine-made (MT/LLM) terms
+  and definitions only after a person approves them; definitions the QA checks
+  flag only after a reviewer approves them.
+- **First deploy in a new repository**: Settings → Pages → Source:
+  "GitHub Actions".
 
 ## Phases
 
-**Now.** SQL database in git (31 languages; en, tr, es published), static
-offline site, CI/CD. Edits via SQL, scripts or a database GUI, then `dump`.
+**Now.** SQL database in git (30 languages with terms; en, tr, es published),
+static offline site, CI/CD. Edits via SQL, scripts or a database GUI, then `dump`.
 
 **Next: data work.** Standardise legacy entries (resolve the QA worklist) and
 fill gaps with machine translation / LLMs, written with `origin = 'mt' | 'llm'`

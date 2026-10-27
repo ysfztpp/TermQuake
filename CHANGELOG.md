@@ -3,6 +3,33 @@
 Software changes. Terminology changes are in the history of `data/db/`
 (`git log -p data/db/term.sql`) and in data releases (`data-v*` tags).
 
+## 0.1.1 (2026-10-27)
+
+Fixes from an independent review.
+
+- `build` refuses to discard edits that were not dumped; `dump` refuses to
+  overwrite `data/db` changes made after the build (pull, branch switch, hand
+  edit). `--force` overrides either.
+- Search keys are derived data: computed on every build, no longer stored in
+  `data/db/term.sql`, so edits made directly in the files (e.g. on GitHub) work.
+- Machine-made (MT/LLM) terms and definitions are published only once
+  approved; a reviewer's approval outranks an automatic QA flag.
+- History: the author of an edit is recorded only when the edit sets
+  `updated_by` (no longer blamed on the import bot); editing an imported term
+  marks it `origin = 'human'`.
+- Line breaks inside values are saved exactly (`\r\n`, `\r`); data files are
+  always LF (`.gitattributes`).
+- Rows may refer to rows loaded later (e.g. `merged_into`); broken references
+  are reported clearly and block `dump`.
+- Deploy runs the tests and data checks itself before publishing; Playwright
+  is pinned.
+- Web app: download links work after the offline worker is installed; links
+  to merged entries open the replacement; a link to a missing entry explains
+  itself; a saved filter for a removed domain falls back to All; right-to-left
+  search text is handled.
+- CSV download: cells starting with `= + - @` can't run as spreadsheet formulas.
+- A volunteer's email address was removed from the legacy snapshot.
+
 ## 0.1.0 (2026-10-27)
 
 First version of the infrastructure.

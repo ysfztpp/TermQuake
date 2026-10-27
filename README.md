@@ -1,8 +1,8 @@
 # TermQuake
 
 Disaster-relief and search & rescue terminology for volunteer interpreters.
-The database holds 31 languages; the website currently publishes **English,
-Turkish and Spanish**, and works offline on any phone once opened.
+The database holds terms in 30 languages; the website currently publishes
+**English, Turkish and Spanish**, and works offline on any phone once opened.
 
 **Use it:** <https://ysfztpp.github.io/TermQuake/>
 
@@ -28,9 +28,13 @@ flowchart LR
   Every change is a reviewed commit, so the full history of every term is in git.
 - **The old Google Sheet is no longer used.** It was migrated once on
   27 October 2026 (read-only); the snapshot is kept in [`data/legacy/`](data/legacy/).
-- **Every push rebuilds and redeploys**: CI checks the database builds, is
-  canonical and passes tests; the site is rebuilt, tested in a browser
-  (including offline) and published to GitHub Pages.
+- **Every change to `main` is checked, then published**: the database must
+  build, the data files must be canonical and all tests must pass; the site is
+  then built, tested in a real browser (including offline) and deployed to
+  GitHub Pages. If any step fails, the live site stays as it was.
+- **Machine translations are never published unreviewed**: terms and
+  definitions made by MT or an LLM appear on the site only after a person
+  approves them ([ADR 0008](docs/adr/0008-provenance-before-ai.md)).
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
 data model: [docs/DATA_MODEL.md](docs/DATA_MODEL.md) ·
@@ -48,7 +52,8 @@ termquake build            # data/db/*.sql -> build/termquake.db
 
 Edit `build/termquake.db` any way you like:
 
-- SQL: `sqlite3 build/termquake.db "UPDATE term SET text='enkaz' WHERE id=42"`
+- SQL: `sqlite3 build/termquake.db "UPDATE term SET text='enkaz', updated_by=7 WHERE id=42"`
+  (`updated_by` = your `contributor` id, so the history records who made the change)
 - a GUI such as [DB Browser for SQLite](https://sqlitebrowser.org/) (spreadsheet-like)
 - a Python script (e.g. AI-assisted gap filling; see [ADR 0008](docs/adr/0008-provenance-before-ai.md))
 
@@ -61,7 +66,18 @@ git commit -am "Fix Turkish term for entry 42"   # or open a pull request
 ```
 
 Every edit is also recorded inside the database (`revision` table: old value,
-new value, time), and saved with the data.
+new value, who, when), and saved with the data.
+
+Small fixes can also be made directly in `data/db/*.sql`, even in GitHub's web
+editor: change the text inside one line, keep everything else. CI checks the
+file is still canonical.
+
+**Two safety checks protect your work.** `termquake build` refuses to replace
+a database that has edits you haven't saved with `dump` yet. `termquake dump`
+refuses to save if `data/db/` changed after your build (a `git pull`, a branch
+switch, a hand edit), because that would undo those changes; run
+`termquake build` and redo your edit. Add `--force` to either only when you
+mean to discard something.
 
 ## Web app
 
@@ -86,8 +102,8 @@ npm test && npm run typecheck
 | `.github/workflows/` | CI, deploy to Pages, data releases |
 
 **Publishing another language:** add its code to `[publish] languages` in
-`termquake.toml` (all 31 are already in the database), check its section of
-the QA report, commit.
+`termquake.toml` (every language from the sheet is already in the database),
+check its section of the QA report, commit.
 
 **Citable data version:** `git tag data-v1.0.0 && git push --tags` attaches
 the database, TBX and CSV to a GitHub Release.

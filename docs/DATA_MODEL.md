@@ -6,7 +6,7 @@ Framework) and the **TBX-Basic** dialect (TerminOrgs, v4) of ISO 30042 (TBX):
 
 ```
 concept  (one meaning, language-independent; permanent id = the legacy sheet's "Nr.")
- └── language section (en, tr, es, ... 31 languages)
+ └── language section (en, tr, es, ... 30 languages with terms)
       └── term (one designation; synonyms are separate terms, ordered)
 ```
 
@@ -59,16 +59,28 @@ Views: `v_language_completion` (coverage per language),
 - **Provenance on every term and definition**: `origin` is `legacy_import`,
   `human`, `mt` or `llm`; `origin_detail` records model and prompt version;
   `review_status` is `unreviewed` → `proposed` → `approved` / `rejected`.
-  Rejected terms are never published.
+  Rejected content is never published; `mt`/`llm` content only once
+  `approved`. Editing the text of an imported term or definition changes its
+  `origin` from `legacy_import` to `human`.
 - **Search key** `text_norm`: lowercase, accent-free, Turkish ı/i unified,
-  punctuation removed. Computed by `termquake dump` (the same `fold` function
-  as the web app; shared tests keep them identical). A build fails if a
-  hand-edited SQL file leaves it stale.
+  punctuation removed (the same `fold` function as the web app; shared tests
+  keep them identical). It is derived data: computed by every
+  `termquake build` and never stored in `data/db`, so a hand-edited file can't
+  leave it stale.
 - **Published languages** are configuration, not data: `[publish] languages`
-  in `termquake.toml`. All 31 languages stay in the database either way.
+  in `termquake.toml`. Every language stays in the database either way
+  (31 are defined; 30 have terms, as the sheet's Albanian column was empty).
 - **History:** triggers write to `revision` on every insert, update or delete
   of a term or definition (installed after loading, so rebuilding never logs
-  fake edits). `updated_at` is maintained automatically.
+  fake edits). The author (`actor_id`) is recorded when the change sets
+  `updated_by`; otherwise it is left unknown rather than guessed.
+  `updated_at` is maintained automatically.
+- **Merging duplicates:** set the old entry's `status = 'merged'` and
+  `merged_into` to the entry that replaces it. Its id stays reserved, and
+  links to it (`#/e/468`) open the replacement on the website.
+- **QA findings vs reviewer decisions:** a definition the checks flag is
+  hidden until a reviewer sets `review_status = 'approved'`; approved
+  definitions are not flagged again.
 
 ## How legacy sheet cells were migrated
 
