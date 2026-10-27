@@ -1,0 +1,86 @@
+# Builds the database, exports and web app from the committed snapshot,
+# tests the result in a real browser (including offline), then publishes
+# it to GitHub Pages. Nothing is published if any step fails.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "src/**"
+      - "db/**"
+      - "data/raw/**"
+      - "termquake.toml"
+      - "pyproject.toml"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to deploy (the sync workflow passes main, after its own commit)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BASE_PATH: /${{ github.event.repository.name }}/
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0 # the "data updated" date comes from the history of data/raw
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install .
+      - name: Fetch the sheet if no snapshot is committed yet (first deploy only)
+        run: test -f data/raw/terms.csv || termquake sync
+      - name: Build database, exports and downloads
+        run: termquake all
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Build web app
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+
+      - name: Browser tests (search, show mode, deep links, offline)
+        run: |
+          pip install playwright pytest
+          python -m playwright install --with-deps chromium
+          (cd site && npx vite preview --port 4173 --strictPort --base "$BASE_PATH" &)
+          for i in $(seq 60); do curl -sf "http://localhost:4173$BASE_PATH" > /dev/null && break; sleep 1; done
+          E2E_URL="http://localhost:4173$BASE_PATH" pytest tests/e2e
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

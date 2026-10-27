@@ -1,0 +1,31 @@
+name: Term correction
+description: Report a wrong, missing or unclear term
+title: "Entry: "
+labels: ["terminology"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. The entry number is shown under each term on the website ("Entry 123").
+        Teşekkürler. Kayıt numarası sitede her terimin altında yazar ("Kayıt 123").
+  - type: input
+    id: entry
+    attributes:
+      label: Entry number / Kayıt numarası
+      placeholder: "123"
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language / Dil
+      options: [English, Türkçe, Español, Other / Diğer]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong? / Sorun nedir?
+      description: The current term, what it should be, and why (a source helps).
+    validations:
+      required: true
