@@ -1,7 +1,7 @@
 import { Fragment } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { EntryRow } from "./components/entry-row";
-import { CheckIcon, CloseIcon, Mark, OfflineIcon, SearchIcon, SwapIcon } from "./components/icons";
+import { CheckIcon, CloseIcon, GlobeIcon, Mark, OfflineIcon, SearchIcon, SwapIcon } from "./components/icons";
 import { ShowMode } from "./components/show-mode";
 import { detectUiLang, type MessageKey, translate, UI_LANGS, type UiLang } from "./i18n";
 import { applyUpdate, useOnline, usePwa } from "./pwa";
@@ -10,6 +10,7 @@ import { loadPrefs, savePrefs } from "./storage";
 import type { Entry, Filter, Language, Termbase } from "./types";
 
 const DATA_URL = `${import.meta.env.BASE_URL}data/termbase.json`;
+const BATCH = 60;
 const PAPER_URL = "https://doi.org/10.1016/j.ijdrr.2026.106498";
 const REPO_URL = "https://github.com/ysfztpp/TermQuake";
 // Default pair per interface language: what a person using that interface most likely needs.
@@ -33,7 +34,9 @@ export function App() {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<number | null>(entryFromHash);
   const [showId, setShowId] = useState<number | null>(null);
+  const [limit, setLimit] = useState(BATCH);
   const searchRef = useRef<HTMLInputElement>(null);
+  const moreRef = useRef<HTMLLIElement>(null);
   const pwa = usePwa();
   const online = useOnline();
   const t = (key: MessageKey, vars?: Record<string, string | number>) => translate(ui, key, vars);
@@ -49,7 +52,7 @@ export function App() {
         setFrom(f);
         setTo(g);
         // A saved domain filter that no longer exists (renamed or removed) falls back to All.
-        if (filter !== "all" && filter !== "phrases" && !data.domains.some((d) => d.code === filter)) {
+        if (filter !== "all" && !data.domains.some((d) => d.code === filter)) {
           setFilter("all");
         }
         setDb(data);
@@ -72,11 +75,6 @@ export function App() {
     const target = openId === null ? location.pathname + location.search : `#/e/${openId}`;
     if (openId === null ? location.hash : location.hash !== target) history.replaceState(null, "", target);
   }, [openId]);
-  // A link to an entry that was merged into another opens the one that replaced it.
-  useEffect(() => {
-    const target = db && openId !== null ? db.moved?.[String(openId)] : undefined;
-    if (target !== undefined) setOpenId(target);
-  }, [db, openId]);
   useEffect(() => {
     if (db && openId !== null) {
       document.getElementById(`entry-${openId}`)?.closest(".row")?.scrollIntoView({ block: "nearest" });
@@ -95,6 +93,23 @@ export function App() {
   }, [db, index, query, from, to, filter]);
   // An entry opened by link stays visible even if the current filter hides it.
   const rows = deepLinked && !list.includes(deepLinked) && !query.trim() ? [deepLinked, ...list] : list;
+
+  // Render the list in batches: 500+ rows at once make cheap phones stutter.
+  useEffect(() => setLimit(BATCH), [query, filter, from]);
+  const linkedAt = deepLinked ? rows.indexOf(deepLinked) : -1;
+  const shown = rows.slice(0, Math.max(limit, linkedAt + 1));
+  useEffect(() => {
+    const sentinel = moreRef.current;
+    if (!sentinel || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (seen) => {
+        if (seen.some((e) => e.isIntersecting)) setLimit((n) => n + BATCH);
+      },
+      { rootMargin: "800px" },
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [shown.length, rows.length]);
 
   const toggle = useCallback((id: number) => setOpenId((cur) => (cur === id ? null : id)), []);
   const closeShow = useCallback(() => setShowId(null), []);
@@ -117,10 +132,9 @@ export function App() {
   const filters: { code: Filter; label: string }[] = [
     { code: "all", label: t("all") },
     ...db.domains.map((d) => ({ code: d.code, label: d.label[ui] ?? d.label.en })),
-    { code: "phrases", label: t("phrases") },
   ];
   const showEntry = showId === null ? undefined : db.entries.find((e) => e.id === showId);
-  const missingLink = openId !== null && !deepLinked && !db.moved?.[String(openId)] && !query.trim();
+  const missingLink = openId !== null && !deepLinked && !query.trim();
   const browsing = !query.trim();
 
   return (
@@ -136,9 +150,14 @@ export function App() {
               <h1 class="brand-name">TermQuake</h1>
               <p class="brand-tagline">{t("tagline")}</p>
             </div>
-            <label class="ui-lang">
-              <span class="visually-hidden">{t("interface")}</span>
-              <select value={ui} onChange={(e) => setUi((e.target as HTMLSelectElement).value as UiLang)}>
+            <label class="ui-lang" title={t("interface")}>
+              <GlobeIcon width="18" height="18" />
+              <span aria-hidden="true">{ui.toUpperCase()}</span>
+              <select
+                aria-label={t("interface")}
+                value={ui}
+                onChange={(e) => setUi((e.target as HTMLSelectElement).value as UiLang)}
+              >
                 {UI_LANGS.map((l) => (
                   <option key={l.code} value={l.code}>
                     {l.label}
@@ -244,7 +263,7 @@ export function App() {
           <p class="empty">{t("noResults", { q: query.trim() })}</p>
         ) : (
           <ul class="rows">
-            {rows.map((entry, i) => {
+            {shown.map((entry, i) => {
               const letter = browsing ? initial(entry.t[from]?.[0], from) : null;
               const prevLetter = browsing && i > 0 ? initial(rows[i - 1].t[from]?.[0], from) : null;
               return (
@@ -268,6 +287,13 @@ export function App() {
                 </Fragment>
               );
             })}
+            {shown.length < rows.length && (
+              <li class="more" ref={moreRef}>
+                <button type="button" class="button" onClick={() => setLimit((n) => n + BATCH)}>
+                  {t("more", { n: rows.length - shown.length })}
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </main>

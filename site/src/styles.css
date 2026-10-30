@@ -18,7 +18,7 @@
   --d-first_aid: #2f855a;
   --d-medical: #c53030;
   --d-misc: #7a5ba6;
-  --d-phrases: #2b6cb0;
+  --d-expressions: #2b6cb0;
   --d-none: #b8c4bf;
 
   --font: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", "Noto Sans",
@@ -50,7 +50,7 @@
     --d-first_aid: #48bb78;
     --d-medical: #f56565;
     --d-misc: #a78bdb;
-    --d-phrases: #63a4e8;
+    --d-expressions: #63a4e8;
     --d-none: #3a4642;
   }
 }
@@ -156,9 +156,9 @@ select {
 
 .top-inner {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding-top: 12px;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
 
 .brand {
@@ -185,7 +185,6 @@ select {
   color: var(--ink-2);
 }
 
-.ui-lang select,
 .pair-select select {
   appearance: none;
   background: var(--surface)
@@ -198,21 +197,51 @@ select {
   font-size: var(--fs-s);
 }
 
+/* Interface language: a small globe button, so it is never mistaken for the
+   term languages below it. The native select covers it, invisible, for access. */
+.ui-lang {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-s);
+  font-weight: 700;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ui-lang select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.ui-lang:has(select:focus-visible) {
+  outline: 3px solid var(--signal);
+  outline-offset: 2px;
+}
+
 .pair {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: end;
+  align-items: center;
   gap: 8px;
 }
 
-.pair-select {
-  display: grid;
-  gap: 2px;
-}
-
+/* From / To are announced to screen readers; on screen the swap arrows between
+   the two menus already say which is which. */
 .pair-label {
-  font-size: var(--fs-s);
-  color: var(--ink-2);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .pair-select select {
@@ -286,6 +315,8 @@ select {
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--gutter));
   padding: 2px var(--gutter);
+  /* Fade at the edge: shows that more filters are a swipe away. */
+  mask-image: linear-gradient(to right, transparent, #000 var(--gutter), #000 calc(100% - 32px), transparent);
 }
 .filters::-webkit-scrollbar {
   display: none;
@@ -296,12 +327,13 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
-  padding: 4px 12px;
+  min-height: 40px;
+  padding: 4px 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
   font-size: var(--fs-s);
+  white-space: nowrap;
   cursor: pointer;
 }
 .filter:not([data-domain="all"])::before {
@@ -323,7 +355,7 @@ select {
 [data-domain="first_aid"] { --dot: var(--d-first_aid); }
 [data-domain="medical"] { --dot: var(--d-medical); }
 [data-domain="misc"] { --dot: var(--d-misc); }
-[data-domain="phrases"] { --dot: var(--d-phrases); }
+[data-domain="expressions"] { --dot: var(--d-expressions); }
 [data-domain="none"] { --dot: var(--d-none); }
 
 /* ---------------------------------------------------------------- status */
@@ -381,8 +413,9 @@ select {
 }
 
 .letter {
-  padding: 18px 0 4px;
-  font-size: var(--fs-l);
+  padding: 20px 0 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-m);
   font-weight: 700;
   color: var(--ink-2);
 }
@@ -396,17 +429,24 @@ select {
   grid-template-columns: 1fr;
   gap: 2px;
   width: 100%;
-  padding: 12px 12px 12px 14px;
+  padding: 12px 0;
   border: 0;
-  border-left: 4px solid var(--dot, var(--d-none));
   background: transparent;
   text-align: start;
   cursor: pointer;
 }
-.row-head:hover {
-  background: var(--surface);
+@media (hover: hover) {
+  .row-head:hover .row-src strong {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
 }
-.row.is-open .row-head {
+.row.is-open {
+  margin: 8px -12px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -418,9 +458,7 @@ select {
 .row-tgt {
   font-size: var(--fs-m);
 }
-.row-tgt-main {
-  box-shadow: inset 0 -0.35em 0 var(--signal-soft);
-}
+
 
 .row-syn {
   color: var(--ink-2);
@@ -433,15 +471,35 @@ select {
 }
 
 .row-domain {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--fs-s);
   color: var(--ink-2);
 }
+.row-domain::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot, var(--d-none));
+}
 
-@media (min-width: 40rem) {
+.more {
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* With a mouse there is no swipe: show every filter, wrapping if needed. */
+@media (min-width: 40rem) and (hover: hover) {
   .filters {
     flex-wrap: wrap;
     overflow: visible;
+    mask-image: none;
   }
+}
+
+@media (min-width: 40rem) {
   .detail-langs {
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   }
@@ -461,9 +519,9 @@ select {
 /* ---------------------------------------------------------------- detail */
 
 .detail {
-  padding: 4px 12px 16px 18px;
-  background: var(--surface);
-  border-left: 4px solid var(--dot, var(--d-none));
+  padding: 4px 0 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
 }
 
 .detail-langs {

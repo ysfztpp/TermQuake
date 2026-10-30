@@ -22,6 +22,13 @@ function Svg({ children, ...props }: IconProps & { children: JSX.Element | JSX.E
   );
 }
 
+export const GlobeIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9c-2.5-2.7-3.6-5.7-3.6-9s1.1-6.3 3.6-9z" />
+  </Svg>
+);
+
 export const SearchIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="10.5" cy="10.5" r="6.5" />

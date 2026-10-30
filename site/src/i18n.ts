@@ -23,7 +23,6 @@ const strings = {
   clear: { en: "Clear search", tr: "Aramayı temizle", es: "Borrar búsqueda" },
   filterLabel: { en: "Show", tr: "Göster", es: "Mostrar" },
   all: { en: "All", tr: "Tümü", es: "Todo" },
-  phrases: { en: "Expressions", tr: "İfadeler", es: "Expresiones" },
   count: { en: "{n} entries", tr: "{n} kayıt", es: "{n} entradas" },
   countOne: { en: "1 entry", tr: "1 kayıt", es: "1 entrada" },
   noResults: {
@@ -31,6 +30,7 @@ const strings = {
     tr: "“{q}” için sonuç yok. Yazımı kontrol edin, daha kısa bir sözcük deneyin ya da Tümü'nü seçin.",
     es: "No hay resultados para “{q}”. Revise la ortografía, pruebe una palabra más corta o elija Todo.",
   },
+  more: { en: "Show {n} more", tr: "{n} kayıt daha göster", es: "Mostrar {n} más" },
   notFound: {
     en: "Entry {id} does not exist (any more). Search for the term instead.",
     tr: "{id} numaralı kayıt yok (artık). Terimi aramayı deneyin.",

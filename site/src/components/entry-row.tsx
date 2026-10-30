@@ -3,7 +3,7 @@ import { type UiLang, translate } from "../i18n";
 import type { Domain, Entry, Language } from "../types";
 import { CheckIcon, CopyIcon, ExpandIcon } from "./icons";
 
-const REPO = "https://github.com/ysfztpp/termquake";
+const REPO = "https://github.com/ysfztpp/TermQuake";
 
 interface Props {
   entry: Entry;
@@ -26,7 +26,7 @@ export function EntryRow({ entry, from, to, languages, domains, ui, open, onTogg
   const panelId = `entry-${entry.id}`;
 
   return (
-    <li class={open ? "row is-open" : "row"} data-domain={entry.d ?? (entry.p ? "phrases" : "none")}>
+    <li class={open ? "row is-open" : "row"} data-domain={entry.d ?? "none"}>
       <button
         type="button"
         class="row-head"
@@ -54,11 +54,7 @@ export function EntryRow({ entry, from, to, languages, domains, ui, open, onTogg
             <span class="row-missing">{t("missing", { lang: to.native })}</span>
           )}
         </span>
-        {(domain || entry.p) && (
-          <span class="row-domain">
-            {domain ? (domain.label[ui] ?? domain.label.en) : t("phrases")}
-          </span>
-        )}
+        {domain && <span class="row-domain">{domain.label[ui] ?? domain.label.en}</span>}
       </button>
       {open && (
         <Detail entry={entry} order={orderLanguages(languages, from, to)} ui={ui} id={panelId} onShow={onShow} to={to} />
