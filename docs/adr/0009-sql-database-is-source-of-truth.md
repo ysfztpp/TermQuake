@@ -1,6 +1,6 @@
 # 0009. The SQL database is the source of truth, stored in git as SQL
 
-**Status:** accepted, 27 October 2026 (supersedes 0002)
+**Status:** accepted, 27 October 2026 (supersedes 0002). Still in force; since [0010](0010-four-tables-raw-data.md) the database holds English, Turkish and Spanish only.
 
 ## Context
 The project needs a professional, structured database rather than a

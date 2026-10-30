@@ -3,6 +3,30 @@
 Software changes. Terminology changes are in the history of `data/db/`
 (`git log -p data/db/term.sql`) and in data releases (`data-v*` tags).
 
+## 0.2.0 (2026-10-30)
+
+A simpler database that the team can learn and teach ([ADR 0010](docs/adr/0010-four-tables-raw-data.md)).
+Version 0.1.1 is kept on the branch `archive/v0.1.1-full-schema`.
+
+- **Four tables** instead of 16: `domain`, `entry`, `term`, `definition`, plus
+  the view `entry_overview`. Constraints enforce the rules (keys, languages,
+  no blank terms, one cell per entry and language).
+- **English, Turkish and Spanish only**, re-imported from the sheet snapshot
+  **exactly as typed**: 523 entries, 1,502 terms, 14 definitions. Synonyms
+  written together stay together; spaces and characters are unchanged; only
+  the three `#empty` placeholders were left out. See `data/legacy/IMPORT_REPORT.md`.
+- **Expressions** are a domain like the others (as in the sheet's Domain column).
+- Removed: the revision log and its triggers (git is the history), the QA
+  engine and report (replaced by the example queries), vote/contributor/
+  release/import tables, provenance and review columns (they return before
+  AI-generated content), and the 27 other languages.
+- New: `queries/`, ten commented example queries, tested on every change.
+- Commands: `termquake migrate` is now `termquake import-sheet`.
+- Website: a more compact header on phones, an interface-language button that
+  cannot be mistaken for the term languages, calmer result rows (no colour
+  stripes or marker highlights), filters that show they scroll, and the list
+  rendered in batches (Lighthouse mobile performance 93 to 99).
+
 ## 0.1.1 (2026-10-27)
 
 Fixes from an independent review.

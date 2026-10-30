@@ -1,6 +1,6 @@
 # 0004. Conservative, lossless import with a QA worklist
 
-**Status:** accepted, October 2026
+**Status:** superseded by [0010](0010-four-tables-raw-data.md), 30 October 2026: the data is now imported exactly as typed.
 
 ## Context
 An audit of the sheet found the legend's symbols used inconsistently: "/" for

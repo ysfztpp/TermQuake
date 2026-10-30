@@ -1,6 +1,6 @@
 # 0005. Version history: git, revision log, data releases
 
-**Status:** accepted, October 2026 (updated for 0009)
+**Status:** accepted, October 2026 (updated for 0009). Point 2, the revision table, was removed by [0010](0010-four-tables-raw-data.md): git is the history.
 
 ## Context
 The team wants a full history of the terminology and citable versions for

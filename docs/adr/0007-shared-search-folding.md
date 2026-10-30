@@ -1,6 +1,6 @@
 # 0007. One search-folding rule, tested in both languages
 
-**Status:** accepted, October 2026
+**Status:** partly superseded by [0010](0010-four-tables-raw-data.md): only the web app folds search text now; the database stores no search key.
 
 ## Context
 Many users type without a Turkish or Spanish keyboard ("sargi" for "sargı",

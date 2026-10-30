@@ -1,6 +1,6 @@
 # 0008. Provenance and review status before any AI-generated content
 
-**Status:** accepted, October 2026
+**Status:** deferred by [0010](0010-four-tables-raw-data.md): the provenance and review columns are added back before any AI-generated content enters the database.
 
 ## Context
 The next step is filling gaps and standardising entries with machine
