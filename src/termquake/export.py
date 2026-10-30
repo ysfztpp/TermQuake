@@ -1,91 +1,66 @@
-"""Publish the database in the formats people need (build artifacts, not committed).
+"""Publish the database in the formats people use (build outputs, never committed).
 
 site/public/downloads/
     termquake.db    the SQLite database itself
-    termquake.tbx   TBX-Basic (TerminOrgs v4, ISO 30042): for CAT tools and termbanks
-    termquake.csv   one row per entry, like the old sheet: for spreadsheets
+    termquake.tbx   TBX-Basic (ISO 30042): for translation tools and termbanks
+    termquake.csv   one row per entry, like the sheet: for spreadsheets
 site/public/data/termbase.json
     compact data for the offline web app
-
-Only languages listed in [publish] in termquake.toml are exported. Never
-published: rejected terms and definitions, machine-made (MT/LLM) content that
-no reviewer has approved, and definitions the QA checks flag (unless approved).
 """
 
 from __future__ import annotations
 
 import csv
 import datetime as dt
-import hashlib
 import json
 import os
 import shutil
 import sqlite3
 import subprocess
 import xml.etree.ElementTree as ET
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import SCHEMA_VERSION, __version__
 from .config import Config, Paths
+from .db import data_digest
 
 TBX_NS = "urn:iso:std:iso:30042:ed-2"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
+
+# Display data for the languages in termquake.toml.
+LANGUAGE_NAMES = {
+    "en": ("English", "English", "ltr"),
+    "tr": ("Turkish", "Türkçe", "ltr"),
+    "es": ("Spanish", "Español", "ltr"),
+}
+
+
+class ExportError(RuntimeError):
+    """Nothing to export from."""
 
 
 @dataclass
 class Entry:
     id: int
-    domain: str | None
-    entry_type: str
-    terms: dict[str, list[str]]
-    definitions: dict[str, dict]
+    domain: str | None  # domain code
+    terms: dict[str, str]  # lang -> cell text, as typed
+    definitions: dict[str, tuple[str, str | None]]  # lang -> (text, source)
 
 
-# What may be published (ADR 0008): never anything rejected, and machine-made
-# content (MT or LLM) only once a person has approved it.
-def publishable(t: str) -> str:
-    """SQL condition for a publishable row of table alias t (term or definition)."""
-    return (
-        f"{t}.review_status <> 'rejected' "
-        f"AND ({t}.origin NOT IN ('mt', 'llm') OR {t}.review_status = 'approved')"
-    )
-
-
-def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
-    entries: dict[int, Entry] = {}
-    for cid, domain, etype in conn.execute(
-        "SELECT c.id, d.code, c.entry_type FROM concept c LEFT JOIN domain d ON d.id = c.domain_id "
-        "WHERE c.status = 'active' ORDER BY c.id"
-    ):
-        entries[cid] = Entry(cid, domain, etype, {}, {})
-    for cid, lang, text in conn.execute(
-        f"SELECT t.concept_id, t.lang, t.text FROM term t WHERE {publishable('t')} "
-        "ORDER BY t.concept_id, t.lang, t.sort_order"
-    ):
-        if cid in entries and lang in languages:
-            entries[cid].terms.setdefault(lang, []).append(text)
-    # Definitions the QA checks flag are held back until a reviewer approves them:
-    # an approval is a person's decision and outranks an automatic check.
-    flagged = {
-        did
-        for (did,) in conn.execute(
-            "SELECT entity_id FROM qa_issue WHERE entity_type = 'definition' "
-            "AND severity IN ('error', 'warning') AND status = 'open'"
+def load_entries(conn: sqlite3.Connection) -> list[Entry]:
+    entries = {
+        eid: Entry(eid, code, {}, {})
+        for eid, code in conn.execute(
+            "SELECT e.id, d.code FROM entry e LEFT JOIN domain d ON d.id = e.domain_id ORDER BY e.id"
         )
     }
-    for did, cid, lang, text, source, review, ok in conn.execute(
-        "SELECT df.id, df.concept_id, df.lang, df.text, s.short_name, df.review_status, "
-        f"({publishable('df')}) "
-        "FROM definition df LEFT JOIN source s ON s.id = df.source_id ORDER BY df.concept_id, df.lang"
+    for eid, lang, text in conn.execute("SELECT entry_id, lang, text FROM term ORDER BY id"):
+        entries[eid].terms[lang] = text
+    for eid, lang, text, source in conn.execute(
+        "SELECT entry_id, lang, text, source FROM definition ORDER BY id"
     ):
-        if cid in entries and lang in languages:
-            entries[cid].definitions[lang] = {
-                "text": text,
-                "source": source,
-                "hidden": not ok or (did in flagged and review != "approved"),
-            }
+        entries[eid].definitions[lang] = (text, source)
     return list(entries.values())
 
 
@@ -93,17 +68,17 @@ def load_entries(conn: sqlite3.Connection, languages: list[str]) -> list[Entry]:
 
 
 def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, path: Path) -> None:
-    labels = dict(
-        conn.execute(
-            "SELECT d.code, l.label FROM domain d JOIN domain_label l ON l.domain_id = d.id AND l.lang = 'en'"
-        )
-    )
+    """TBX-Basic: conceptEntry > langSec > termSec. Expressions are marked with the
+    termType "phrase" rather than a subject field."""
+    names = dict(conn.execute("SELECT code, name_en FROM domain"))
     ET.register_namespace("", TBX_NS)
 
     def q(tag: str) -> str:
         return f"{{{TBX_NS}}}{tag}"
 
-    root = ET.Element(q("tbx"), {"type": "TBX-Basic", "style": "dca", XML_LANG: config.pivot})
+    root = ET.Element(
+        q("tbx"), {"type": "TBX-Basic", "style": "dca", XML_LANG: config.languages[0]}
+    )
     file_desc = ET.SubElement(ET.SubElement(root, q("tbxHeader")), q("fileDesc"))
     ET.SubElement(
         ET.SubElement(file_desc, q("titleStmt")), q("title")
@@ -117,26 +92,22 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
         if not e.terms:
             continue
         ce = ET.SubElement(body, q("conceptEntry"), {"id": f"tq{e.id}"})
-        if e.domain:
-            ET.SubElement(ce, q("descrip"), {"type": "subjectField"}).text = labels.get(
-                e.domain, e.domain
-            )
+        if e.domain and e.domain != "expressions":
+            ET.SubElement(ce, q("descrip"), {"type": "subjectField"}).text = names[e.domain]
         for lang in config.languages:
-            terms = e.terms.get(lang)
-            if not terms:
+            if lang not in e.terms:
                 continue
             ls = ET.SubElement(ce, q("langSec"), {XML_LANG: lang})
-            d = e.definitions.get(lang)
-            if d and not d["hidden"]:
+            if lang in e.definitions:
+                text, source = e.definitions[lang]
                 grp = ET.SubElement(ls, q("descripGrp"))
-                ET.SubElement(grp, q("descrip"), {"type": "definition"}).text = d["text"]
-                if d["source"]:
-                    ET.SubElement(grp, q("admin"), {"type": "source"}).text = d["source"]
-            for term in terms:
-                ts = ET.SubElement(ls, q("termSec"))
-                ET.SubElement(ts, q("term")).text = term
-                if e.entry_type == "phrase":
-                    ET.SubElement(ts, q("termNote"), {"type": "termType"}).text = "phrase"
+                ET.SubElement(grp, q("descrip"), {"type": "definition"}).text = text
+                if source:
+                    ET.SubElement(grp, q("admin"), {"type": "source"}).text = source
+            ts = ET.SubElement(ls, q("termSec"))
+            ET.SubElement(ts, q("term")).text = e.terms[lang]
+            if e.domain == "expressions":
+                ET.SubElement(ts, q("termNote"), {"type": "termType"}).text = "phrase"
     ET.indent(root, space="  ")
     path.write_bytes(
         b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="utf-8")
@@ -147,47 +118,30 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
 
 
 def _cell(text: str) -> str:
-    """Spreadsheet-safe cell: text starting with = + - @ is shown as text, never run
-    as a formula (OWASP CSV injection), so a term can't execute code in Excel."""
+    """Spreadsheet-safe: text starting with = + - @ is shown as text, never run as a
+    formula (OWASP CSV injection)."""
     return "'" + text if text[:1] in ("=", "+", "-", "@") else text
 
 
 def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
-    """One row per entry. UTF-8 with BOM so Excel shows Turkish characters correctly."""
+    """One row per entry. UTF-8 with BOM so that Excel shows Turkish characters correctly."""
     with path.open("w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(
-            [
-                "id",
-                "domain",
-                "entry_type",
-                *config.languages,
-                *[f"definition_{lang}" for lang in config.languages],
-            ]
+            ["id", "domain", *config.languages, *[f"definition_{x}" for x in config.languages]]
         )
         for e in entries:
-            defs = [e.definitions.get(lang) for lang in config.languages]
             w.writerow(
                 [
                     e.id,
                     e.domain or "",
-                    e.entry_type,
-                    *[_cell(" / ".join(e.terms.get(lang, []))) for lang in config.languages],
-                    *["" if not d or d["hidden"] else _cell(d["text"]) for d in defs],
+                    *[_cell(e.terms.get(lang, "")) for lang in config.languages],
+                    *[_cell(e.definitions.get(lang, ("",))[0]) for lang in config.languages],
                 ]
             )
 
 
 # --------------------------------------------------------------------------- web app data
-
-
-def data_version(data_db: Path) -> str:
-    """Fingerprint of the canonical data: changes exactly when the terminology changes."""
-    h = hashlib.sha256()
-    for path in sorted(data_db.glob("*.sql")):
-        h.update(path.name.encode())
-        h.update(path.read_bytes())
-    return h.hexdigest()[:12]
 
 
 def _data_date(root: Path) -> str:
@@ -209,32 +163,33 @@ def _data_date(root: Path) -> str:
 def write_site_json(
     entries: list[Entry], conn: sqlite3.Connection, config: Config, paths: Paths, path: Path
 ) -> None:
-    langs = {
-        code: (name, native, direction)
-        for code, name, native, direction in conn.execute(
-            "SELECT code, name_en, name_native, direction FROM language"
+    """The web app shows text trimmed of surrounding spaces (display only: the
+    database keeps every cell as typed)."""
+    domains = [
+        {"code": code, "label": {"en": en, "tr": tr, "es": es}}
+        for code, en, tr, es in conn.execute(
+            "SELECT code, name_en, name_tr, name_es FROM domain ORDER BY id"
         )
-    }
-    domain_labels: dict[str, dict[str, str]] = defaultdict(dict)
-    for code, lang, label in conn.execute(
-        "SELECT d.code, l.lang, l.label FROM domain d JOIN domain_label l ON l.domain_id = d.id ORDER BY d.id"
-    ):
-        domain_labels[code][lang] = label
+    ]
     payload = {
         "schema": SCHEMA_VERSION,
         "data": {
-            "version": data_version(paths.data_db),
+            "version": data_digest(paths.data_db),
             "updated": _data_date(paths.root),
             "pipeline": __version__,
             "commit": os.environ.get("GITHUB_SHA", "")[:12],
         },
         "languages": [
-            {"code": c, "name": langs[c][0], "native": langs[c][1], "dir": langs[c][2]}
+            {
+                "code": c,
+                "name": LANGUAGE_NAMES[c][0],
+                "native": LANGUAGE_NAMES[c][1],
+                "dir": LANGUAGE_NAMES[c][2],
+            }
             for c in config.languages
         ],
-        "domains": [{"code": code, "label": labels} for code, labels in domain_labels.items()],
+        "domains": domains,
         "entries": [_entry_json(e) for e in entries if e.terms],
-        "moved": _moved(conn),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -242,52 +197,31 @@ def write_site_json(
     )
 
 
-def _moved(conn: sqlite3.Connection) -> dict[str, int]:
-    """Merged entries -> the entry that replaced them (following chains), so old links work."""
-    merged = dict(
-        conn.execute("SELECT id, merged_into FROM concept WHERE status = 'merged'").fetchall()
-    )
-    moved = {}
-    for old in merged:
-        target, seen = merged[old], {old}
-        while target in merged and target not in seen:
-            seen.add(target)
-            target = merged[target]
-        moved[str(old)] = target
-    return moved
-
-
 def _entry_json(e: Entry) -> dict:
-    item: dict = {"id": e.id, "t": e.terms}
+    item: dict = {"id": e.id, "t": {lang: [text.strip()] for lang, text in e.terms.items()}}
     if e.domain:
         item["d"] = e.domain
-    if e.entry_type == "phrase":
-        item["p"] = 1
-    defs = {
-        lang: {"x": d["text"], **({"s": d["source"]} if d["source"] else {})}
-        for lang, d in e.definitions.items()
-        if not d["hidden"]
-    }
-    if defs:
-        item["def"] = defs
+    if e.definitions:
+        item["def"] = {
+            lang: {"x": text.strip(), **({"s": source.strip()} if source else {})}
+            for lang, (text, source) in e.definitions.items()
+        }
     return item
 
 
 # --------------------------------------------------------------------------- entry point
 
 
-class ExportError(RuntimeError):
-    """Nothing to export from."""
-
-
 def export_all(config: Config, paths: Paths) -> None:
-    if not paths.database.exists():  # sqlite3.connect would silently create an empty one
+    if not paths.database.exists():  # sqlite3.connect would silently create an empty file
         raise ExportError("build/termquake.db not found. Run `termquake build` first.")
     conn = sqlite3.connect(paths.database)
     try:
         if conn.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
-            raise ExportError("Database schema version mismatch; rebuild with `termquake build`.")
-        entries = load_entries(conn, config.languages)
+            raise ExportError(
+                "build/termquake.db has an older schema. Run `termquake build --force`."
+            )
+        entries = load_entries(conn)
         downloads = paths.site_public / "downloads"
         downloads.mkdir(parents=True, exist_ok=True)
         write_tbx(entries, conn, config, downloads / "termquake.tbx")

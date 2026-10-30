@@ -1,14 +1,14 @@
-"""termquake: build, edit and publish the TermQuake SQL database.
+"""termquake: build, edit and publish the TermQuake database.
 
 Everyday work:
-  termquake build          data/db/*.sql -> build/termquake.db (+ QA checks)
-  (edit build/termquake.db with SQL, a script or a database GUI)
-  termquake dump           build/termquake.db -> data/db/*.sql + data/QA_REPORT.md, then commit
-  termquake export         build/termquake.db -> downloads and web app data
+  termquake build          data/db/*.sql -> build/termquake.db
+  (edit build/termquake.db with SQL, DB Browser for SQLite or a script)
+  termquake dump           build/termquake.db -> data/db/*.sql; then review with git diff and commit
+  termquake export         build/termquake.db -> downloads and website data
   termquake all            build + export
 
-One-time / rare:
-  termquake migrate        create data/db from the legacy sheet snapshot (already done)
+Rare:
+  termquake import-sheet   create data/db from the sheet snapshot in data/legacy (already done)
   termquake fetch-sheet    download a Google Sheet (e.g. a copy) as CSV, read-only
 """
 
@@ -19,11 +19,45 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from .build import BuildError, build_database, dump_database, migrate
-from .config import Paths, find_root, load_config
+from .config import Config, Paths, find_root, load_config
+from .db import (
+    DatabaseError,
+    build_database,
+    connect,
+    create_schema,
+    dump_database,
+    dump_texts,
+    write_texts,
+)
 from .export import ExportError, export_all
 from .fetch import fetch_sheet
-from .legacy import MigrationError
+from .sheet import SheetError, import_sheet, write_report
+
+
+def run_import(config: Config, paths: Paths, *, force: bool) -> str:
+    if any(paths.data_db.glob("*.sql")) and not force:
+        raise SheetError(
+            "data/db already exists, and it is the source of truth now. Importing again "
+            "would overwrite every edit made since. Use --force only to start over from the sheet."
+        )
+    conn = connect(":memory:")
+    try:
+        create_schema(conn, paths)
+        stats = import_sheet(conn, config, paths.legacy)
+        conn.commit()
+        texts = dump_texts(conn)
+    finally:
+        conn.close()
+    for old in paths.data_db.glob("*.sql"):
+        old.unlink()
+    write_texts(texts, paths.data_db)
+    write_report(stats, paths.legacy / "IMPORT_REPORT.md")
+    build_database(paths, force=True)
+    per_lang = ", ".join(f"{k} {v}" for k, v in stats.terms.items())
+    return (
+        f"imported {stats.entries} entries, {sum(stats.terms.values())} terms ({per_lang}), "
+        f"{stats.definitions} definitions -> data/db/ (see data/legacy/IMPORT_REPORT.md)"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -33,22 +67,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, help="repository root (default: found from cwd)")
     sub = parser.add_subparsers(dest="command", required=True)
     build = sub.add_parser("build", help="build the database from data/db")
-    build.add_argument(
-        "--force", action="store_true", help="discard edits in build/termquake.db not yet dumped"
-    )
-    dump = sub.add_parser("dump", help="save the database to data/db and refresh the QA report")
+    build.add_argument("--force", action="store_true", help="discard edits that were not dumped")
+    dump = sub.add_parser("dump", help="save the database to data/db")
     dump.add_argument(
-        "--check",
-        action="store_true",
-        help="write nothing; fail if the committed files are not up to date",
+        "--check", action="store_true", help="write nothing; fail if data/db is not canonical"
     )
     dump.add_argument(
         "--force", action="store_true", help="save even if data/db changed since the build"
     )
-    sub.add_parser("export", help="write downloads and web app data")
+    sub.add_parser("export", help="write the downloads and the website data")
     sub.add_parser("all", help="build + export")
-    mig = sub.add_parser("migrate", help="one-time: create data/db from data/legacy")
-    mig.add_argument("--force", action="store_true", help="overwrite an existing data/db")
+    imp = sub.add_parser("import-sheet", help="create data/db from the sheet snapshot (once)")
+    imp.add_argument("--force", action="store_true", help="overwrite an existing data/db")
     fetch = sub.add_parser("fetch-sheet", help="download a Google Sheet's tabs as CSV (read-only)")
     fetch.add_argument("--sheet-id", required=True, help="ID of the sheet to read (use a copy)")
     fetch.add_argument("--out", type=Path, required=True, help="directory for the CSV files")
@@ -56,51 +86,36 @@ def main(argv: list[str] | None = None) -> int:
 
     paths = Paths((args.root or find_root()).resolve())
     config = load_config(paths.root / "termquake.toml")
-
     try:
-        if args.command == "migrate":
-            stats = migrate(config, paths, force=args.force)
-            print(
-                f"migrated {stats.concepts} entries, {sum(stats.terms.values())} terms in "
-                f"{len(stats.terms)} languages, {stats.definitions} definitions -> data/db/ "
-                f"(see data/legacy/MIGRATION_REPORT.md)"
-            )
+        if args.command == "import-sheet":
+            print(run_import(config, paths, force=args.force))
         if args.command in ("build", "all"):
-            r = build_database(config, paths, force=getattr(args, "force", False))
-            published = ", ".join(f"{lang}={r.terms.get(lang, 0)}" for lang in config.languages)
+            c = build_database(paths, force=getattr(args, "force", False))
+            terms = ", ".join(f"{lang} {c.terms.get(lang, 0)}" for lang in config.languages)
             print(
-                f"built build/termquake.db: {r.concepts} entries, {sum(r.terms.values())} terms "
-                f"in {len(r.terms)} languages (published: {published}), {r.definitions} definitions, "
-                f"{sum(r.issues.values())} QA findings"
+                f"built build/termquake.db: {c.entries} entries, terms: {terms}, "
+                f"{c.definitions} definitions"
             )
         if args.command in ("export", "all"):
             export_all(config, paths)
             print("exported site/public/data/termbase.json and site/public/downloads/")
         if args.command == "dump":
-            result = dump_database(config, paths, check=args.check, force=args.force)
+            stale = dump_database(paths, check=args.check, force=args.force)
             if args.check:
-                if result.stale_files:
+                if stale:
                     print(
-                        "not in canonical form: "
-                        + ", ".join(result.stale_files)
-                        + "\nRun `termquake build && termquake dump` and commit the result.",
+                        f"not in canonical form: {', '.join(stale)}\n"
+                        "Run `termquake build && termquake dump` and commit the result.",
                         file=sys.stderr,
                     )
                     return 1
-                if result.report_stale:
-                    # Not a failure: a data edit made on GitHub can't refresh the report.
-                    print(
-                        "warning: data/QA_REPORT.md is out of date; "
-                        "`termquake build && termquake dump` refreshes it",
-                        file=sys.stderr,
-                    )
                 print("data/db is in canonical form")
             else:
-                print("saved data/db/ and data/QA_REPORT.md; review with `git diff`, then commit")
+                print("saved data/db/; review with `git diff data/db`, then commit")
         if args.command == "fetch-sheet":
             changed = fetch_sheet(args.sheet_id, config.tabs, args.out)
             print("changed: " + ", ".join(changed) if changed else "no changes")
-    except (BuildError, MigrationError, ExportError) as exc:
+    except (DatabaseError, SheetError, ExportError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     except sqlite3.Error as exc:

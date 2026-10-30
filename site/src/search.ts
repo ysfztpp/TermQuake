@@ -28,9 +28,7 @@ export function buildIndex(entries: Entry[]): IndexedTerm[] {
 }
 
 export function matchesFilter(entry: Entry, filter: Filter): boolean {
-  if (filter === "all") return true;
-  if (filter === "phrases") return entry.p === 1;
-  return entry.d === filter;
+  return filter === "all" || entry.d === filter;
 }
 
 /**

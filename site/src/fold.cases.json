@@ -1,0 +1,129 @@
+{
+  "_comment": "Search folding cases: site/src/fold.ts must turn each input into the expected search key.",
+  "cases": [
+    [
+      "sargı bezi",
+      "sargi bezi"
+    ],
+    [
+      "SARGI BEZİ",
+      "sargi bezi"
+    ],
+    [
+      "İç organlar",
+      "ic organlar"
+    ],
+    [
+      "i̇ç organlar",
+      "ic organlar"
+    ],
+    [
+      "Iğdır",
+      "igdir"
+    ],
+    [
+      "şişmek",
+      "sismek"
+    ],
+    [
+      "göğüs kafesi",
+      "gogus kafesi"
+    ],
+    [
+      "Çadır",
+      "cadir"
+    ],
+    [
+      "búsqueda y rescate",
+      "busqueda y rescate"
+    ],
+    [
+      "¿Qué sucedió? / ¿Qué ha pasado?",
+      "que sucedio que ha pasado"
+    ],
+    [
+      "cuña",
+      "cuna"
+    ],
+    [
+      "Straße",
+      "strasse"
+    ],
+    [
+      "Trümmer / Schutt",
+      "trummer schutt"
+    ],
+    [
+      "ΣΕΙΣΜΟΣ",
+      "σεισμοσ"
+    ],
+    [
+      "Σεισμός",
+      "σεισμοσ"
+    ],
+    [
+      "землетрясение",
+      "землетрясение"
+    ],
+    [
+      "Ёлка",
+      "елка"
+    ],
+    [
+      "حُطام / رُكام",
+      "حطام ركام"
+    ],
+    [
+      "פצוע/ה",
+      "פצוע ה"
+    ],
+    [
+      "भूकंप",
+      "भूकंप"
+    ],
+    [
+      "が",
+      "が"
+    ],
+    [
+      "cardiopulmonary resuscitation (CPR)",
+      "cardiopulmonary resuscitation cpr"
+    ],
+    [
+      "  multiple   spaces\there ",
+      "multiple spaces here"
+    ],
+    [
+      "112'yi arayın",
+      "112 yi arayin"
+    ],
+    [
+      "miner’s helmet",
+      "miner s helmet"
+    ],
+    [
+      "e-posta",
+      "e posta"
+    ],
+    [
+      "مراقبت‌های ویژه",
+      "مراقبتهای ویژه"
+    ],
+    [
+      "مراقبتهای ویژه",
+      "مراقبتهای ویژه"
+    ],
+    [
+      "sold­ier",
+      "soldier"
+    ],
+    [
+      "zero​width",
+      "zerowidth"
+    ],
+    [
+      "",
+      ""
+    ]
+  ]
+}

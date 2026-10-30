@@ -1,8 +1,7 @@
 /**
  * Search key: lowercase, accent-free, Turkish i/ı unified, punctuation removed.
- *
- * Must stay identical to `fold` in src/termquake/textnorm.py; both are tested
- * against tests/shared/fold_cases.json.
+ * "SARGI BEZİ", "sargı bezi" and "sargi bezi" all become "sargi bezi", so people
+ * can search without a Turkish keyboard. Tested against fold.cases.json.
  */
 
 // Below U+0800 (Latin, Greek, Cyrillic, Armenian, Hebrew, Arabic) combining

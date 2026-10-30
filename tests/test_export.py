@@ -1,122 +1,92 @@
+"""Downloads (TBX, CSV, SQLite) and the website data."""
+
 import csv
 import json
-import sqlite3
 import xml.etree.ElementTree as ET
 
 import pytest
+from conftest import execute
 
 from termquake.export import ExportError, export_all
 
-TBX_NS = "{urn:iso:std:iso:30042:ed-2}"
+TBX = "{urn:iso:std:iso:30042:ed-2}"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
 
 
-def test_tbx_is_wellformed_tbx_basic(config, migrated):
-    paths, _ = migrated
-    export_all(config, paths)
-    root = ET.parse(paths.site_public / "downloads" / "termquake.tbx").getroot()
-    assert root.tag == f"{TBX_NS}tbx"
-    assert root.get("type") == "TBX-Basic" and root.get("style") == "dca"
-    entries = root.findall(f".//{TBX_NS}conceptEntry")
+@pytest.fixture
+def exported(config, imported):
+    export_all(config, imported)
+    return imported
+
+
+def site(paths):
+    return json.loads((paths.site_public / "data" / "termbase.json").read_text("utf-8"))
+
+
+def csv_rows(paths):
+    with (paths.site_public / "downloads" / "termquake.csv").open(encoding="utf-8-sig") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_tbx_basic(exported):
+    root = ET.parse(exported.site_public / "downloads" / "termquake.tbx").getroot()
+    assert root.tag == f"{TBX}tbx" and root.get("type") == "TBX-Basic"
+    entries = {e.get("id"): e for e in root.iter(f"{TBX}conceptEntry")}
     assert len(entries) == 10
-    first = next(e for e in entries if e.get("id") == "tq5")
-    # Only published languages, in publish order (German is in the database but not published).
-    assert [ls.get(XML_LANG) for ls in first.findall(f"{TBX_NS}langSec")] == ["en", "tr", "es"]
-    tr_terms = [t.text for t in first.findall(f"{TBX_NS}langSec[@{XML_LANG}='tr']//{TBX_NS}term")]
-    assert tr_terms == ["enkaz", "moloz"]
-    phrase = next(e for e in entries if e.get("id") == "tq149")
-    assert phrase.find(f".//{TBX_NS}termNote[@type='termType']").text == "phrase"
+    five = entries["tq5"]
+    assert five.find(f"{TBX}descrip[@type='subjectField']").text == "General Terms"
+    assert [ls.get(XML_LANG) for ls in five.findall(f"{TBX}langSec")] == ["en", "tr", "es"]
+    assert five.find(f"{TBX}langSec[@{XML_LANG}='tr']//{TBX}term").text == "enkaz / moloz"
+    one = entries["tq1"]
+    assert one.find(f".//{TBX}descrip[@type='definition']").text.startswith("Enkaz altındaki")
+    assert one.find(f".//{TBX}admin[@type='source']").text == "TDK"
+    phrase = entries["tq149"]
+    assert phrase.find(f"{TBX}descrip[@type='subjectField']") is None
+    assert phrase.find(f".//{TBX}termNote[@type='termType']").text == "phrase"
 
 
-def test_site_json(config, migrated):
-    paths, _ = migrated
-    export_all(config, paths)
-    data = json.loads((paths.site_public / "data" / "termbase.json").read_text("utf-8"))
+def test_website_data(exported):
+    data = site(exported)
     assert [lang["code"] for lang in data["languages"]] == ["en", "tr", "es"]
+    assert [d["code"] for d in data["domains"]][-1] == "expressions"
     by_id = {e["id"]: e for e in data["entries"]}
-    assert by_id[5]["t"]["tr"] == ["enkaz", "moloz"] and by_id[5]["d"] == "general"
-    assert "de" not in by_id[1]["t"]
-    assert by_id[149]["p"] == 1 and "d" not in by_id[149]
-    assert by_id[1]["def"]["tr"]["s"] == "TDK"
-    assert "def" not in by_id[5]  # flagged draft definition is not published
-    assert "en" not in by_id[470]["t"]  # placeholder was never imported
+    assert by_id[5]["t"]["tr"] == ["enkaz / moloz"] and by_id[5]["d"] == "general"
+    assert by_id[17]["t"]["tr"] == ["mahsur kalmış"]  # shown without the trailing space
+    assert by_id[1]["def"]["tr"] == {
+        "x": "Enkaz altındaki kişileri bulma ve kurtarma çalışması.",
+        "s": "TDK",
+    }
+    assert "en" not in by_id[470]["t"]
+    assert "d" not in by_id[468]
     assert len(data["data"]["version"]) == 12
 
 
-def test_downloads(config, migrated):
-    paths, _ = migrated
-    export_all(config, paths)
-    downloads = paths.site_public / "downloads"
+def test_downloads(exported):
+    downloads = exported.site_public / "downloads"
     assert {p.name for p in downloads.iterdir()} == {
         "termquake.db",
         "termquake.tbx",
         "termquake.csv",
     }
     assert (downloads / "termquake.csv").read_bytes().startswith(b"\xef\xbb\xbf")  # BOM for Excel
-    with (downloads / "termquake.csv").open(encoding="utf-8-sig") as fh:
-        rows = list(csv.DictReader(fh))
+    rows = csv_rows(exported)
+    assert list(rows[0]) == [
+        "id",
+        "domain",
+        "en",
+        "tr",
+        "es",
+        "definition_en",
+        "definition_tr",
+        "definition_es",
+    ]
     assert next(r for r in rows if r["id"] == "5")["tr"] == "enkaz / moloz"
 
 
-def test_qa_report(config, migrated):
-    paths, _ = migrated
-    report = paths.qa_report.read_text("utf-8")
-    assert "| Turkish (`tr`) | ✓ | 10 / 10 | 100.0% |" in report
-    assert "| German (`de`) |  |" in report
-    assert "Entry 470 [en]: no en term" in report
-
-
-def site(paths):
-    return {
-        e["id"]: e
-        for e in json.loads((paths.site_public / "data" / "termbase.json").read_text("utf-8"))[
-            "entries"
-        ]
-    }
-
-
-def edit(paths, *statements):
-    conn = sqlite3.connect(paths.database)
-    for sql in statements:
-        conn.execute(sql)
-    conn.commit()
-    conn.close()
-
-
-def test_machine_translations_are_published_only_after_approval(config, migrated):
-    paths, _ = migrated
-    edit(
-        paths,
-        "INSERT INTO term(concept_id, lang, text, sort_order, origin, review_status) "
-        "VALUES (5, 'es', 'cascotes', 9, 'llm', 'proposed')",
-        "INSERT INTO definition(concept_id, lang, text, origin, review_status) "
-        "VALUES (149, 'en', 'A machine-written definition of this expression.', 'mt', 'unreviewed')",
-    )
-    export_all(config, paths)
-    assert "cascotes" not in site(paths)[5]["t"]["es"]
-    assert "def" not in site(paths)[149] or "en" not in site(paths)[149]["def"]
-
-    edit(paths, "UPDATE term SET review_status='approved' WHERE text='cascotes'")
-    export_all(config, paths)
-    assert site(paths)[5]["t"]["es"][-1] == "cascotes"
-
-
-def test_reviewer_approval_outranks_qa_flag(config, migrated):
-    paths, _ = migrated
-    export_all(config, paths)
-    assert "def" not in site(paths)[5]  # flagged by QA: held back
-    edit(paths, "UPDATE definition SET review_status='approved' WHERE concept_id=5")
-    export_all(config, paths)
-    assert site(paths)[5]["def"]
-
-
-def test_csv_cells_never_run_as_formulas(config, migrated):
-    paths, _ = migrated
-    edit(paths, "UPDATE term SET text='=HYPERLINK(\"x\")' WHERE concept_id=1 AND lang='en'")
-    export_all(config, paths)
-    with (paths.site_public / "downloads" / "termquake.csv").open(encoding="utf-8-sig") as fh:
-        row = next(r for r in csv.DictReader(fh) if r["id"] == "1")
-    assert row["en"].startswith("'=")
+def test_csv_cells_never_run_as_formulas(config, imported):
+    execute(imported, "UPDATE term SET text = '=HYPERLINK(1)' WHERE entry_id = 1 AND lang = 'en'")
+    export_all(config, imported)
+    assert next(r for r in csv_rows(imported) if r["id"] == "1")["en"].startswith("'=")
 
 
 def test_export_before_build_explains(config, workspace):

@@ -5,8 +5,6 @@ export interface Termbase {
   languages: Language[];
   domains: Domain[];
   entries: Entry[];
-  /** Entries merged into another: old id -> the id that replaced it (keeps shared links working). */
-  moved?: Record<string, number>;
 }
 
 export interface Language {
@@ -26,13 +24,11 @@ export interface Entry {
   id: number;
   /** Terms by language code; the first one in each list is the main term. */
   t: Record<string, string[]>;
-  /** Domain code. Absent for expressions and uncategorised entries. */
+  /** Domain code ("expressions" for phrases and sentences). Absent when the sheet had none. */
   d?: string;
-  /** 1 when the entry is an expression (a phrase or sentence), not a term. */
-  p?: 1;
   /** Definitions by language: text and optional source. */
   def?: Record<string, { x: string; s?: string }>;
 }
 
-/** "phrases" selects expressions; any other value is a domain code. */
-export type Filter = "all" | "phrases" | string;
+/** "all", or a domain code. */
+export type Filter = "all" | string;

@@ -1,5 +1,5 @@
 # Publishing a citable dataset version: push a tag like data-v1.0.0 and this
-# attaches the database, TBX, CSV and QA report to a GitHub Release.
+# attaches the database, TBX and CSV to a GitHub Release.
 # (Connect the repository to Zenodo once, and every release also gets a DOI.)
 name: Data release
 
@@ -30,8 +30,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             --title "TermQuake data ${TAG#data-}" \
-            --notes-file data/QA_REPORT.md \
+            --notes "TermQuake data ${TAG#data-}: the SQLite database, TBX-Basic and CSV." \
             site/public/downloads/termquake.db \
             site/public/downloads/termquake.tbx \
-            site/public/downloads/termquake.csv \
-            data/QA_REPORT.md
+            site/public/downloads/termquake.csv

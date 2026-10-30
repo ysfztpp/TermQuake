@@ -12,6 +12,7 @@ the app re-renders asynchronously, so reading the DOM right after an action is f
 from __future__ import annotations
 
 import os
+import re
 
 import pytest
 
@@ -84,6 +85,36 @@ def test_show_mode_opens_and_closes(app, expect):
 def test_deep_link_opens_entry(app, expect):
     app.goto(URL + "#/e/5")
     expect(app.locator("#entry-5")).to_contain_text("enkaz")
+
+
+def test_long_list_renders_in_batches(app, expect):
+    app.goto(URL)
+    expect(app.locator(".row").first).to_be_visible()
+    assert app.locator(".row").count() == 60  # not all 523 at once
+    expect(app.locator(".results-count")).to_contain_text("523")
+    app.locator(".more").scroll_into_view_if_needed()  # scrolling near the end loads more
+    expect(app.locator(".row")).to_have_count(120)
+
+
+def test_interface_language_menu(app, expect):
+    app.goto(URL)
+    expect(app.locator(".ui-lang")).to_contain_text("TR")
+    app.select_option(".ui-lang select", "en")
+    expect(app.locator(".ui-lang")).to_contain_text("EN")
+    expect(app.locator("#q")).to_have_attribute("placeholder", re.compile("Type in"))
+
+
+def test_touch_targets_are_large_enough(app, expect):
+    """Everything tappable in the header and filters is at least 40 px tall (phone)."""
+    app.goto(URL)
+    expect(app.locator(".row").first).to_be_visible()
+    small = app.evaluate(
+        """() => [...document.querySelectorAll('.top button, .top select, .ui-lang, .finder button, .finder input')]
+              .filter(el => el.closest('.ui-lang') === null || el.classList.contains('ui-lang'))
+              .map(el => [el.className || el.tagName, Math.round(el.getBoundingClientRect().height)])
+              .filter(([, h]) => h < 40)"""
+    )
+    assert small == []
 
 
 def test_link_to_missing_entry_explains(app, expect):

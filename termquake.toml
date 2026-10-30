@@ -1,72 +1,37 @@
 # TermQuake configuration.
 
-[publish]
-# Languages shown on the website and included in the TBX/CSV downloads.
-# The database holds every language; this list only controls what is published.
-# Adding a language: add its code here, check its section of data/QA_REPORT.md.
+# Languages in the database, on the website and in the downloads, in display
+# order. They must match the CHECK (lang IN (...)) constraints in db/schema.sql.
 languages = ["en", "tr", "es"]
-# Language used to detect duplicate entries and listed first in exports.
-pivot = "en"
 
 # ---------------------------------------------------------------------------
-# Legacy Google Sheet. Used ONLY by the one-time migration (`termquake migrate`)
-# and the manual `termquake fetch-sheet` command. Normal work never touches it:
-# the SQL database in data/db/ is the source of truth.
+# The original Google Sheet. Used only to create data/db from the snapshot in
+# data/legacy (`termquake import-sheet`) and to download a copy of a sheet
+# (`termquake fetch-sheet`). Normal work never touches it: data/db is the
+# source of truth.
 # ---------------------------------------------------------------------------
-[legacy]
-sheet_id = "1LfFJZxpbCbz2lRpKQ0_kTMKNJVDJ9FyrlAoP15TU8wU"
+[sheet]
+id = "1LfFJZxpbCbz2lRpKQ0_kTMKNJVDJ9FyrlAoP15TU8wU"
 
-# Tabs that were snapshotted into data/legacy/<file>.csv.
-[legacy.tabs]
+# Sheet tab -> snapshot file in data/legacy/
+[sheet.tabs]
 "All Terms and Expressions /Terimler ve İfadeler" = "terms"
 "Terms Needing Definition Selection" = "definitions"
 "Source Term Selection" = "term_candidates"
 "Term submission" = "term_submissions"
 
-# Sheet column header -> BCP 47 language code. Headers are matched on the English
-# name in parentheses ("Türkçe (Turkish)" -> "Turkish"): several native names are misspelled.
-[legacy.columns]
+# Sheet column header -> language code. Headers are matched on the English name
+# in parentheses ("Türkçe (Turkish)" -> "Turkish").
+[sheet.columns]
 "English" = "en"
 "Turkish" = "tr"
 "Spanish" = "es"
-"German" = "de"
-"Russian" = "ru"
-"French" = "fr"
-"Kurdish" = "kmr"
-"Zazaki" = "zza"
-"Arabic" = "ar"
-"Greek" = "el"
-"Japanese" = "ja"
-"Hebrew" = "he"
-"Italian" = "it"
-"Armenian" = "hy"
-"Dutch" = "nl"
-"Chinese-S" = "zh-Hans"
-"Chinese-T" = "zh-Hant"
-"Bulgarian" = "bg"
-"Korean" = "ko"
-"Persian" = "fa"
-"Hindi" = "hi"
-"Portuguese" = "pt"
-"Swedish" = "sv"
-"Romanian" = "ro"
-"Serbian" = "sr-Cyrl"
-"Macedonian" = "mk"
-"Hungarian" = "hu"
-"Finnish" = "fi"
-"Albanian" = "sq"
-"Czech" = "cs"
-"Polish" = "pl"
 
-# Domain column label -> domain code (see db/seed.sql).
-[legacy.domains]
+# Value of the sheet's "Domain" column -> domain code (data/db/domain.sql).
+[sheet.domains]
 "Genel Terimler / General Terms" = "general"
 "Arama Kurtarma / Search & Rescue" = "search_rescue"
 "İlk Yardım / Fırst Aid" = "first_aid"
 "Tıbbi Terimler / Medical Terms" = "medical"
 "Diğer / Misc" = "misc"
-
-# Domain labels that are really an entry type: these rows become
-# concept.entry_type = 'phrase' and are never split on "/".
-[legacy.entry_types]
-phrase_labels = ["İfadeler / Expressions"]
+"İfadeler / Expressions" = "expressions"

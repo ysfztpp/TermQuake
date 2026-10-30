@@ -5,10 +5,10 @@ import { browse, buildIndex, initial, scoreTerm, search } from "./search";
 import type { Entry } from "./types";
 
 const shared = JSON.parse(
-  readFileSync(new URL("../../tests/shared/fold_cases.json", import.meta.url), "utf-8"),
+  readFileSync(new URL("./fold.cases.json", import.meta.url), "utf-8"),
 ) as { cases: [string, string][] };
 
-describe("fold matches the Python pipeline", () => {
+describe("fold matches the shared test cases", () => {
   it.each(shared.cases)("%j -> %j", (input, expected) => {
     expect(fold(input)).toBe(expected);
   });
@@ -19,7 +19,7 @@ const entries: Entry[] = [
   { id: 41, d: "first_aid", t: { en: ["bandage"], tr: ["sargı bezi"], es: ["venda"] } },
   { id: 43, d: "first_aid", t: { en: ["elastic bandage"], tr: ["elastik bandaj"], es: ["vendajes elásticos"] } },
   { id: 101, d: "search_rescue", t: { en: ["debris removal"], tr: ["enkaz kaldırma"], es: ["retirada de escombros"] } },
-  { id: 154, p: 1, t: { en: ["What happened?"], tr: ["Ne oldu?"], es: ["¿Qué sucedió?"] } },
+  { id: 154, d: "expressions", t: { en: ["What happened?"], tr: ["Ne oldu?"], es: ["¿Qué sucedió?"] } },
   { id: 470, d: "search_rescue", t: { tr: ["dolgu zemin"] } },
 ];
 const index = buildIndex(entries);
@@ -57,7 +57,7 @@ describe("search", () => {
 
   it("applies the domain and expression filters", () => {
     expect(search(index, "debris", { ...opts, filter: "search_rescue" }).map((h) => h.entry.id)).toEqual([101]);
-    expect(search(index, "oldu", { ...opts, filter: "phrases" }).map((h) => h.entry.id)).toEqual([154]);
+    expect(search(index, "oldu", { ...opts, filter: "expressions" }).map((h) => h.entry.id)).toEqual([154]);
   });
 
   it("ignores punctuation and accents in queries", () => {
