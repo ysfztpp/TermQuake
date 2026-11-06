@@ -6,6 +6,7 @@ Everyday work:
   termquake dump           build/termquake.db -> data/db/*.sql; then review with git diff and commit
   termquake export         build/termquake.db -> downloads and website data
   termquake all            build + export
+  termquake clean          fix spaces, invisible characters and Unicode form in build/termquake.db
 
 Rare:
   termquake import-sheet   create data/db from the sheet snapshot in data/legacy (already done)
@@ -19,6 +20,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from .clean import RULES, clean_database
 from .config import Config, Paths, find_root, load_config
 from .db import (
     DatabaseError,
@@ -76,6 +78,12 @@ def main(argv: list[str] | None = None) -> int:
         "--force", action="store_true", help="save even if data/db changed since the build"
     )
     sub.add_parser("export", help="write the downloads and the website data")
+    clean = sub.add_parser(
+        "clean", help="mechanical clean-up of build/termquake.db (spaces, invisible characters)"
+    )
+    clean.add_argument(
+        "--check", action="store_true", help="change nothing; fail if a text needs cleaning"
+    )
     sub.add_parser("all", help="build + export")
     imp = sub.add_parser("import-sheet", help="create data/db from the sheet snapshot (once)")
     imp.add_argument("--force", action="store_true", help="overwrite an existing data/db")
@@ -112,6 +120,29 @@ def main(argv: list[str] | None = None) -> int:
                 print("data/db is in canonical form")
             else:
                 print("saved data/db/; review with `git diff data/db`, then commit")
+        if args.command == "clean":
+            if not paths.database.exists():
+                raise DatabaseError("build/termquake.db not found. Run `termquake build` first.")
+            conn = connect(paths.database)
+            try:
+                stats = clean_database(conn, apply=not args.check)
+            finally:
+                conn.close()
+            total = sum(stats.changed.values())
+            by_rule = ", ".join(f"{r} {stats.rules[r]}" for r in RULES if stats.rules[r])
+            if args.check:
+                if total:
+                    print(
+                        f"{total} texts need cleaning ({by_rule}).\n"
+                        "Run `termquake build && termquake clean && termquake dump` and commit.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                print("all texts are clean")
+            elif total:
+                print(f"cleaned {total} texts ({by_rule}); run `termquake dump` to save")
+            else:
+                print("nothing to clean")
         if args.command == "fetch-sheet":
             changed = fetch_sheet(args.sheet_id, config.tabs, args.out)
             print("changed: " + ", ".join(changed) if changed else "no changes")

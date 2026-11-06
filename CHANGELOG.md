@@ -3,6 +3,16 @@
 Software changes. Terminology changes are in the history of `data/db/`
 (`git log -p data/db/term.sql`) and in data releases (`data-v*` tags).
 
+## 0.4.0 (2026-11-06)
+
+- **Mechanical clean-up** ([ADR 0012](docs/adr/0012-mechanical-cleanup.md)):
+  new command `termquake clean` with five rules (xlsx control codes, Turkish
+  i̇, invisible characters, spaces, Unicode NFC). Applied to the data: 663
+  texts changed, no word changed. `termquake clean --check` runs in CI.
+- **Term ids restored**: English, Turkish and Spanish terms have their 0.2.0
+  ids again (1–1502); the other languages follow from 1503. 0.3.0 had
+  renumbered them, against the "never renumber" rule in CONTRIBUTING.md.
+
 ## 0.3.0 (2026-11-06)
 
 All languages of the sheet are in the database ([ADR 0011](docs/adr/0011-all-languages-language-table.md)).

@@ -124,20 +124,23 @@ SQLite checks foreign keys only when `PRAGMA foreign_keys = ON`. The
 - The schema has a version number (`PRAGMA user_version = 3`), raised whenever the tables change.
 - Every column has a comment in `db/schema.sql` saying what it holds.
 
-## The data is exactly as typed
+## The data: as typed, mechanically cleaned
 
-The data was imported from the sheet without changes ([ADR 0010](adr/0010-four-tables-raw-data.md), [0011](adr/0011-all-languages-language-table.md)):
+The data was imported from the sheet exactly as typed ([ADR 0010](adr/0010-four-tables-raw-data.md),
+[0011](adr/0011-all-languages-language-table.md)); only spreadsheet placeholders
+(`#empty1`–`#empty3`, the Persian `#خالی1`–`#خالی3`, French `#N/A`) were left out.
 
-- a cell with several synonyms, such as `enkaz / moloz`, is one term row;
-- spaces at the start or end of a cell, and an `i` written as `i` + combining dot, are kept;
-- only spreadsheet placeholders were left out (`#empty1`–`#empty3`, the Persian `#خالی1`–`#خالی3`, French `#N/A`).
+Then one clean-up step was applied ([ADR 0012](adr/0012-mechanical-cleanup.md)):
+spaces at the start and end, line breaks, double and no-break spaces, invisible
+characters, the Turkish "i̇" and the Unicode form. It changes how text is stored,
+never the words: a cell with several synonyms, such as `enkaz / moloz`, is still
+one term row. `termquake clean --check` makes sure every later edit follows
+the same rules.
 
-[`data/legacy/IMPORT_REPORT.md`](../data/legacy/IMPORT_REPORT.md) lists these
-cases and the queries in [`queries/`](../queries/) find them. Cleaning them up
-is the team's decision, made in the database and reviewed in git.
-
-The website shows each cell without the spaces around it. That is display
-only; the database is not changed.
+[`data/legacy/IMPORT_REPORT.md`](../data/legacy/IMPORT_REPORT.md) lists what the
+import noticed, and the queries in [`queries/`](../queries/) find what is left
+to decide. Each further clean-up step is the team's decision, made in the
+database and reviewed in git.
 
 ## Mapping to TBX (the ISO exchange format)
 

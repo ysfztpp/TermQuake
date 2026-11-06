@@ -18,3 +18,4 @@ don't rewrite old ones.
 | [0009](0009-sql-database-is-source-of-truth.md) | The SQL database is the source of truth, stored in git as SQL |
 | [0010](0010-four-tables-raw-data.md) | Four tables, data exactly as typed (languages: see 0011) |
 | [0011](0011-all-languages-language-table.md) | All sheet languages, in a `language` table |
+| [0012](0012-mechanical-cleanup.md) | Mechanical clean-up (spaces, invisible characters, Unicode form), enforced by a check |
