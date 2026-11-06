@@ -35,7 +35,7 @@ def test_tbx_basic(exported):
     assert len(entries) == 10
     five = entries["tq5"]
     assert five.find(f"{TBX}descrip[@type='subjectField']").text == "General Terms"
-    assert [ls.get(XML_LANG) for ls in five.findall(f"{TBX}langSec")] == ["en", "tr", "es"]
+    assert [ls.get(XML_LANG) for ls in five.findall(f"{TBX}langSec")] == ["en", "tr", "es", "de"]
     assert five.find(f"{TBX}langSec[@{XML_LANG}='tr']//{TBX}term").text == "enkaz / moloz"
     one = entries["tq1"]
     assert one.find(f".//{TBX}descrip[@type='definition']").text.startswith("Enkaz altındaki")
@@ -47,7 +47,14 @@ def test_tbx_basic(exported):
 
 def test_website_data(exported):
     data = site(exported)
-    assert [lang["code"] for lang in data["languages"]] == ["en", "tr", "es"]
+    # languages without any term (e.g. Albanian) are not shown
+    assert [lang["code"] for lang in data["languages"]] == ["en", "tr", "es", "de", "ar"]
+    assert data["languages"][-1] == {
+        "code": "ar",
+        "name": "Arabic",
+        "native": "العربية",
+        "dir": "rtl",
+    }
     assert [d["code"] for d in data["domains"]][-1] == "expressions"
     by_id = {e["id"]: e for e in data["entries"]}
     assert by_id[5]["t"]["tr"] == ["enkaz / moloz"] and by_id[5]["d"] == "general"
@@ -76,9 +83,13 @@ def test_downloads(exported):
         "en",
         "tr",
         "es",
+        "de",
+        "ar",
         "definition_en",
         "definition_tr",
         "definition_es",
+        "definition_de",
+        "definition_ar",
     ]
     assert next(r for r in rows if r["id"] == "5")["tr"] == "enkaz / moloz"
 

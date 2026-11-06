@@ -84,8 +84,8 @@ the other's changes.
 
 ## Website
 
-- **Data:** `termquake export` writes one JSON file with the three languages
-  (about 60 KB). The site shows each cell without surrounding spaces; the
+- **Data:** `termquake export` writes one JSON file with every language that
+  has a term (about 400 KB, compressed in transit). The site shows each cell without surrounding spaces; the
   database keeps them as typed.
 - **Search** ignores case, accents and Turkish dotless/dotted i, so "sargi"
   finds "sargı bezi" without a Turkish keyboard.
@@ -113,7 +113,7 @@ the other's changes.
 
 ## Growing later
 
-The four tables are a starting point, not a ceiling. Each later need adds a
+The five tables are a starting point, not a ceiling. Each later need adds a
 column or a table through a schema change (raise `SCHEMA_VERSION`, update
 `db/schema.sql`, migrate the data, review the diff):
 

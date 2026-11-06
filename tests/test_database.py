@@ -20,7 +20,7 @@ def tr_term(paths, entry_id):
 # --------------------------------------------------------------------------- schema
 
 
-def test_four_tables_and_one_view(imported):
+def test_five_tables_and_one_view(imported):
     objects = query(
         imported,
         "SELECT type, name FROM sqlite_master WHERE type IN ('table', 'view') "
@@ -30,6 +30,7 @@ def test_four_tables_and_one_view(imported):
         ("table", "definition"),
         ("table", "domain"),
         ("table", "entry"),
+        ("table", "language"),
         ("table", "term"),
         ("view", "entry_overview"),
     ]
@@ -39,7 +40,10 @@ def test_four_tables_and_one_view(imported):
 @pytest.mark.parametrize(
     "sql",
     [
-        "INSERT INTO term(entry_id, lang, text) VALUES (1, 'de', 'Trümmer')",  # not a project language
+        "INSERT INTO term(entry_id, lang, text) VALUES (1, 'xx', 'Trümmer')",  # not in language
+        "INSERT INTO language(id, code, name_en, name_native, direction) "
+        "VALUES (99, 'xx', 'X', 'X', 'up')",  # direction is ltr or rtl
+        "DELETE FROM language WHERE code = 'de'",  # terms still use it
         "INSERT INTO term(entry_id, lang, text) VALUES (470, 'en', '   ')",  # blank
         "INSERT INTO term(entry_id, lang, text) VALUES (5, 'tr', 'enkaz')",  # second cell for 5/tr
         "INSERT INTO term(entry_id, lang, text) VALUES (9999, 'en', 'ghost')",  # no such entry
@@ -59,9 +63,19 @@ def test_deleting_an_entry_deletes_its_terms_and_definitions(imported):
 
 
 def test_overview_reads_like_the_sheet(imported):
-    assert query(imported, "SELECT * FROM entry_overview WHERE id = 5") == [
-        (5, "General Terms", "debris / rubble", "enkaz / moloz", "escombros", "Buna gerek var mı?")
-    ]
+    row = query(imported, "SELECT * FROM entry_overview WHERE id = 5")[0]
+    assert row[:6] == (
+        5,
+        "General Terms",
+        "debris / rubble",
+        "enkaz / moloz",
+        "escombros",
+        "Trümmer",
+    )
+    assert row[-1] == "Buna gerek var mı?"
+    languages = [code for (code,) in query(imported, "SELECT code FROM language ORDER BY id")]
+    columns = [c[1] for c in query(imported, "PRAGMA table_info(entry_overview)")]
+    assert columns == ["id", "domain", *languages, "definition_tr"]  # one column per language
 
 
 # --------------------------------------------------------------------------- build and dump

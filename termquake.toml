@@ -1,8 +1,7 @@
 # TermQuake configuration.
 
-# Languages in the database, on the website and in the downloads, in display
-# order. They must match the CHECK (lang IN (...)) constraints in db/schema.sql.
-languages = ["en", "tr", "es"]
+# The languages are rows of the `language` table (data/db/language.sql).
+# Website and downloads show every language that has at least one term.
 
 # ---------------------------------------------------------------------------
 # The original Google Sheet. Used only to create data/db from the snapshot in
@@ -19,13 +18,6 @@ id = "1LfFJZxpbCbz2lRpKQ0_kTMKNJVDJ9FyrlAoP15TU8wU"
 "Terms Needing Definition Selection" = "definitions"
 "Source Term Selection" = "term_candidates"
 "Term submission" = "term_submissions"
-
-# Sheet column header -> language code. Headers are matched on the English name
-# in parentheses ("Türkçe (Turkish)" -> "Turkish").
-[sheet.columns]
-"English" = "en"
-"Turkish" = "tr"
-"Spanish" = "es"
 
 # Value of the sheet's "Domain" column -> domain code (data/db/domain.sql).
 [sheet.domains]

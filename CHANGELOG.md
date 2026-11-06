@@ -3,6 +3,23 @@
 Software changes. Terminology changes are in the history of `data/db/`
 (`git log -p data/db/term.sql`) and in data releases (`data-v*` tags).
 
+## 0.3.0 (2026-11-06)
+
+All languages of the sheet are in the database ([ADR 0011](docs/adr/0011-all-languages-language-table.md)).
+
+- **A fifth table, `language`** (BCP 47 code, English and native name, writing
+  direction). `term.lang` and `definition.lang` are foreign keys to it instead
+  of a CHECK on three codes. Schema version 3.
+- **30 languages, 12,415 terms**, re-imported from the 27 October snapshot
+  exactly as typed (the live sheet was checked on 6 November: unchanged).
+  English, Turkish and Spanish texts are unchanged; term ids were renumbered.
+- Placeholders in other scripts (`#خالی1`, French `#N/A`) are left out like `#empty1`.
+- Import report: Persian zero-width non-joiners are no longer flagged; the
+  xlsx control-character code `_x0002_` is.
+- `entry_overview` has one column per language; website and downloads (TBX,
+  CSV, SQLite) include every language that has a term.
+- `termquake.toml` no longer lists languages.
+
 ## 0.2.0 (2026-10-30)
 
 A simpler database that the team can learn and teach ([ADR 0010](docs/adr/0010-four-tables-raw-data.md)).

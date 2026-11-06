@@ -1,7 +1,6 @@
 # TermQuake
 
-Disaster-relief and search & rescue terminology in **English, Turkish and
-Spanish**, for volunteer interpreters, rescuers and survivors. The website works
+Disaster-relief and search & rescue terminology in **30 languages**, for volunteer interpreters, rescuers and survivors. The website works
 offline on any phone once it has been opened.
 
 **Use it:** <https://ysfztpp.github.io/TermQuake/>
@@ -15,15 +14,16 @@ interpreters and developers. The project is described in
 
 ```mermaid
 erDiagram
-    domain ||--o{ entry : groups
-    entry  ||--o{ term : "is said with"
-    entry  ||--o{ definition : "is explained by"
+    domain   ||--o{ entry : groups
+    entry    ||--o{ term : "is said with"
+    entry    ||--o{ definition : "is explained by"
+    language ||--o{ term : "is written in"
 ```
 
-Four tables: an **entry** is one meaning (one row of the original sheet); each
-language says it with a **term**; an entry belongs to a **domain** and may have
-a **definition**. 523 entries, 1,502 terms, 14 definitions, exactly as typed in
-the sheet. Start with [docs/DATA_MODEL.md](docs/DATA_MODEL.md).
+Five tables: an **entry** is one meaning (one row of the original sheet); each
+**language** says it with a **term**; an entry belongs to a **domain** and may
+have a **definition**. 523 entries, 12,415 terms in 30 languages, 14
+definitions, exactly as typed in the sheet. Start with [docs/DATA_MODEL.md](docs/DATA_MODEL.md).
 
 ## How it works
 
