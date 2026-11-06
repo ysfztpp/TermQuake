@@ -28,7 +28,7 @@ from . import SCHEMA_VERSION
 from .config import Paths
 
 # Load and dump order: a table comes after the tables it refers to.
-TABLES = ["domain", "entry", "term", "definition"]
+TABLES = ["language", "domain", "entry", "term", "definition"]
 
 HEADER = "-- TermQuake data: table {table}. Written by `termquake dump`; one row per line.\n"
 

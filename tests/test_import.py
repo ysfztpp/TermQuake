@@ -19,12 +19,33 @@ def test_cells_are_kept_exactly_as_typed(imported):
     assert terms[(88, "en")] == "automated external defibrillator (AED)"
 
 
-def test_only_english_turkish_and_spanish(imported):
+def test_every_language_column_is_imported(imported):
     assert {lang for (lang,) in query(imported, "SELECT DISTINCT lang FROM term")} == {
         "en",
         "tr",
         "es",
+        "de",
+        "ar",
     }
+    assert query(imported, "SELECT text FROM term WHERE entry_id = 1 AND lang = 'ar'") == [
+        ("البحث والإنقاذ",)
+    ]
+    report = (imported.legacy / "IMPORT_REPORT.md").read_text("utf-8")
+    assert "unknown column 'Mystery column'; not imported" in report
+
+
+def test_language_table(imported):
+    assert len(query(imported, "SELECT * FROM language")) == 31  # every column of the sheet
+    assert query(imported, "SELECT code, direction FROM language WHERE id IN (1, 9, 16)") == [
+        ("en", "ltr"),
+        ("ar", "rtl"),
+        ("zh-Hans", "ltr"),
+    ]
+
+
+def test_term_ids_follow_entry_then_language_order(imported):
+    rows = query(imported, "SELECT entry_id, lang FROM term WHERE entry_id = 1 ORDER BY id")
+    assert rows == [(1, "en"), (1, "tr"), (1, "es"), (1, "de"), (1, "ar")]
 
 
 def test_placeholders_and_empty_cells_have_no_row(imported):

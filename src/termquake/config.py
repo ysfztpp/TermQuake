@@ -56,10 +56,8 @@ class Paths:
 
 @dataclass(frozen=True)
 class Config:
-    languages: list[str]  # language codes, in display order
     sheet_id: str
     tabs: dict[str, str]  # sheet tab name -> snapshot file stem
-    columns: dict[str, str]  # English language name in the sheet header -> code
     domains: dict[str, str]  # sheet "Domain" value -> domain code
 
     @property
@@ -73,9 +71,7 @@ def load_config(path: Path | None = None) -> Config:
         raw = tomllib.load(fh)
     sheet = raw["sheet"]
     return Config(
-        languages=list(raw["languages"]),
         sheet_id=sheet["id"],
         tabs=dict(sheet["tabs"]),
-        columns=dict(sheet["columns"]),
         domains=dict(sheet["domains"]),
     )

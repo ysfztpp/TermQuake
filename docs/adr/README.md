@@ -16,4 +16,5 @@ don't rewrite old ones.
 | [0007](0007-shared-search-folding.md) | One search-folding rule (now in the web app only, see 0010) |
 | [0008](0008-provenance-before-ai.md) | Provenance and review status before any AI-generated content (deferred until then, see 0010) |
 | [0009](0009-sql-database-is-source-of-truth.md) | The SQL database is the source of truth, stored in git as SQL |
-| [0010](0010-four-tables-raw-data.md) | Four tables, English/Turkish/Spanish, data exactly as typed |
+| [0010](0010-four-tables-raw-data.md) | Four tables, data exactly as typed (languages: see 0011) |
+| [0011](0011-all-languages-language-table.md) | All sheet languages, in a `language` table |

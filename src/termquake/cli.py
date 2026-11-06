@@ -53,9 +53,9 @@ def run_import(config: Config, paths: Paths, *, force: bool) -> str:
     write_texts(texts, paths.data_db)
     write_report(stats, paths.legacy / "IMPORT_REPORT.md")
     build_database(paths, force=True)
-    per_lang = ", ".join(f"{k} {v}" for k, v in stats.terms.items())
     return (
-        f"imported {stats.entries} entries, {sum(stats.terms.values())} terms ({per_lang}), "
+        f"imported {stats.entries} entries, "
+        f"{sum(stats.terms.values())} terms in {len(stats.terms)} languages, "
         f"{stats.definitions} definitions -> data/db/ (see data/legacy/IMPORT_REPORT.md)"
     )
 
@@ -91,9 +91,9 @@ def main(argv: list[str] | None = None) -> int:
             print(run_import(config, paths, force=args.force))
         if args.command in ("build", "all"):
             c = build_database(paths, force=getattr(args, "force", False))
-            terms = ", ".join(f"{lang} {c.terms.get(lang, 0)}" for lang in config.languages)
             print(
-                f"built build/termquake.db: {c.entries} entries, terms: {terms}, "
+                f"built build/termquake.db: {c.entries} entries, "
+                f"{sum(c.terms.values())} terms in {len(c.terms)} languages, "
                 f"{c.definitions} definitions"
             )
         if args.command in ("export", "all"):

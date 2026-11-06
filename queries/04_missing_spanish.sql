@@ -1,5 +1,5 @@
 -- Entries that have no Spanish term yet, with their English and Turkish terms.
--- Change 'es' to 'en' or 'tr' to check another language.
+-- Change 'es' to any code in the language table (e.g. 'de', 'ar') to check another language.
 SELECT e.id, en.text AS english, tr.text AS turkish
 FROM entry e
 LEFT JOIN term en ON en.entry_id = e.id AND en.lang = 'en'

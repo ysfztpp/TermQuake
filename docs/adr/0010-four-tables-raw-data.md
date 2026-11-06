@@ -1,6 +1,7 @@
 # 0010. Four tables, English/Turkish/Spanish, data exactly as typed
 
-**Status:** accepted, 30 October 2026. Supersedes [0004](0004-conservative-lossless-import.md),
+**Status:** accepted, 30 October 2026. The three-language limit is replaced by
+[0011](0011-all-languages-language-table.md) (all sheet languages, `language` table). Supersedes [0004](0004-conservative-lossless-import.md),
 [0005](0005-versioning.md) (revision log part), [0007](0007-shared-search-folding.md)
 (Python part) and [0008](0008-provenance-before-ai.md) (for now). The full 16-table version is kept
 on the branch `archive/v0.1.1-full-schema`.

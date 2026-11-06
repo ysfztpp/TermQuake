@@ -28,12 +28,24 @@ from .db import data_digest
 TBX_NS = "urn:iso:std:iso:30042:ed-2"
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
 
-# Display data for the languages in termquake.toml.
-LANGUAGE_NAMES = {
-    "en": ("English", "English", "ltr"),
-    "tr": ("Turkish", "Türkçe", "ltr"),
-    "es": ("Spanish", "Español", "ltr"),
-}
+
+@dataclass
+class Language:
+    code: str  # BCP 47 tag
+    name: str  # English name
+    native: str  # the language's own name
+    dir: str  # "ltr" or "rtl"
+
+
+def load_languages(conn: sqlite3.Connection) -> list[Language]:
+    """Languages with at least one term, in display order."""
+    return [
+        Language(*row)
+        for row in conn.execute(
+            "SELECT code, name_en, name_native, direction FROM language l "
+            "WHERE EXISTS (SELECT 1 FROM term t WHERE t.lang = l.code) ORDER BY id"
+        )
+    ]
 
 
 class ExportError(RuntimeError):
@@ -67,7 +79,9 @@ def load_entries(conn: sqlite3.Connection) -> list[Entry]:
 # --------------------------------------------------------------------------- TBX
 
 
-def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, path: Path) -> None:
+def write_tbx(
+    entries: list[Entry], conn: sqlite3.Connection, languages: list[str], path: Path
+) -> None:
     """TBX-Basic: conceptEntry > langSec > termSec. Expressions are marked with the
     termType "phrase" rather than a subject field."""
     names = dict(conn.execute("SELECT code, name_en FROM domain"))
@@ -76,9 +90,7 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
     def q(tag: str) -> str:
         return f"{{{TBX_NS}}}{tag}"
 
-    root = ET.Element(
-        q("tbx"), {"type": "TBX-Basic", "style": "dca", XML_LANG: config.languages[0]}
-    )
+    root = ET.Element(q("tbx"), {"type": "TBX-Basic", "style": "dca", XML_LANG: languages[0]})
     file_desc = ET.SubElement(ET.SubElement(root, q("tbxHeader")), q("fileDesc"))
     ET.SubElement(
         ET.SubElement(file_desc, q("titleStmt")), q("title")
@@ -94,7 +106,7 @@ def write_tbx(entries: list[Entry], conn: sqlite3.Connection, config: Config, pa
         ce = ET.SubElement(body, q("conceptEntry"), {"id": f"tq{e.id}"})
         if e.domain and e.domain != "expressions":
             ET.SubElement(ce, q("descrip"), {"type": "subjectField"}).text = names[e.domain]
-        for lang in config.languages:
+        for lang in languages:
             if lang not in e.terms:
                 continue
             ls = ET.SubElement(ce, q("langSec"), {XML_LANG: lang})
@@ -123,20 +135,18 @@ def _cell(text: str) -> str:
     return "'" + text if text[:1] in ("=", "+", "-", "@") else text
 
 
-def write_csv(entries: list[Entry], config: Config, path: Path) -> None:
+def write_csv(entries: list[Entry], languages: list[str], path: Path) -> None:
     """One row per entry. UTF-8 with BOM so that Excel shows Turkish characters correctly."""
     with path.open("w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(
-            ["id", "domain", *config.languages, *[f"definition_{x}" for x in config.languages]]
-        )
+        w.writerow(["id", "domain", *languages, *[f"definition_{x}" for x in languages]])
         for e in entries:
             w.writerow(
                 [
                     e.id,
                     e.domain or "",
-                    *[_cell(e.terms.get(lang, "")) for lang in config.languages],
-                    *[_cell(e.definitions.get(lang, ("",))[0]) for lang in config.languages],
+                    *[_cell(e.terms.get(lang, "")) for lang in languages],
+                    *[_cell(e.definitions.get(lang, ("",))[0]) for lang in languages],
                 ]
             )
 
@@ -161,7 +171,11 @@ def _data_date(root: Path) -> str:
 
 
 def write_site_json(
-    entries: list[Entry], conn: sqlite3.Connection, config: Config, paths: Paths, path: Path
+    entries: list[Entry],
+    conn: sqlite3.Connection,
+    languages: list[Language],
+    paths: Paths,
+    path: Path,
 ) -> None:
     """The web app shows text trimmed of surrounding spaces (display only: the
     database keeps every cell as typed)."""
@@ -180,13 +194,7 @@ def write_site_json(
             "commit": os.environ.get("GITHUB_SHA", "")[:12],
         },
         "languages": [
-            {
-                "code": c,
-                "name": LANGUAGE_NAMES[c][0],
-                "native": LANGUAGE_NAMES[c][1],
-                "dir": LANGUAGE_NAMES[c][2],
-            }
-            for c in config.languages
+            {"code": x.code, "name": x.name, "native": x.native, "dir": x.dir} for x in languages
         ],
         "domains": domains,
         "entries": [_entry_json(e) for e in entries if e.terms],
@@ -222,11 +230,15 @@ def export_all(config: Config, paths: Paths) -> None:
                 "build/termquake.db has an older schema. Run `termquake build --force`."
             )
         entries = load_entries(conn)
+        languages = load_languages(conn)
+        codes = [x.code for x in languages]
         downloads = paths.site_public / "downloads"
         downloads.mkdir(parents=True, exist_ok=True)
-        write_tbx(entries, conn, config, downloads / "termquake.tbx")
-        write_csv(entries, config, downloads / "termquake.csv")
-        write_site_json(entries, conn, config, paths, paths.site_public / "data" / "termbase.json")
+        write_tbx(entries, conn, codes, downloads / "termquake.tbx")
+        write_csv(entries, codes, downloads / "termquake.csv")
+        write_site_json(
+            entries, conn, languages, paths, paths.site_public / "data" / "termbase.json"
+        )
     finally:
         conn.close()
     shutil.copyfile(paths.database, downloads / "termquake.db")

@@ -8,13 +8,11 @@ sheet's xlsx export; the sheet itself was never modified), and committed here.
 
 | File | Sheet tab | Imported |
 |---|---|---|
-| `terms.csv` | All Terms and Expressions /Terimler ve İfadeler | Nr., Domain, English, Turkish and Spanish columns, each cell exactly as typed |
+| `terms.csv` | All Terms and Expressions /Terimler ve İfadeler | Nr., Domain and all 31 language columns, each cell exactly as typed |
 | `definitions.csv` | Terms Needing Definition Selection | definitions and their sources, as typed |
 | `term_candidates.csv` | Source Term Selection | no: archived (validator votes on candidate terms) |
 | `term_submissions.csv` | Term submission | no: archived (volunteer submissions) |
 
-The other 27 language columns of `terms.csv` are kept here; they are not in the
-database (see [ADR 0010](../../docs/adr/0010-four-tables-raw-data.md)).
 What was left out, and what is worth a look, is listed in
 [IMPORT_REPORT.md](IMPORT_REPORT.md).
 
