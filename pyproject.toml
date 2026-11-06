@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "termquake"
-version = "0.3.0"
+version = "0.4.0"
 description = "Data pipeline for the TermQuake disaster-relief termbase: Google Sheet -> SQLite -> exports, TBX and web app data."
 readme = "README.md"
 license = "MIT"

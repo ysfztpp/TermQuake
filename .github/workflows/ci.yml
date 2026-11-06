@@ -44,6 +44,8 @@ jobs:
         run: termquake build
       - name: Committed files are exactly what `termquake dump` writes
         run: termquake dump --check
+      - name: Texts follow the mechanical clean-up rules
+        run: termquake clean --check
 
   site:
     name: Web app (types + unit tests)

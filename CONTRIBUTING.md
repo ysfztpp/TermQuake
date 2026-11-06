@@ -22,6 +22,7 @@ Edit `build/termquake.db` with [DB Browser for SQLite](https://sqlitebrowser.org
 Then:
 
 ```bash
+termquake clean                 # fixes stray spaces and invisible characters (ADR 0012)
 termquake dump                  # saves data/db/*.sql
 git diff data/db                # check: only the rows you meant to change
 ```
