@@ -89,9 +89,9 @@ SELECT lang, text FROM term WHERE entry_id = 5;
 The same rows in the file git stores (`data/db/term.sql`), one line per row:
 
 ```sql
-INSERT INTO term (id, entry_id, lang, text) VALUES (121, 5, 'en', 'debris / rubble');
-INSERT INTO term (id, entry_id, lang, text) VALUES (122, 5, 'tr', 'enkaz / moloz');
-INSERT INTO term (id, entry_id, lang, text) VALUES (123, 5, 'es', 'escombros');
+INSERT INTO term (id, entry_id, lang, text) VALUES (13, 5, 'en', 'debris / rubble');
+INSERT INTO term (id, entry_id, lang, text) VALUES (14, 5, 'tr', 'enkaz / moloz');
+INSERT INTO term (id, entry_id, lang, text) VALUES (15, 5, 'es', 'escombros');
 ```
 
 ## The rules the database enforces

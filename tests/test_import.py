@@ -43,9 +43,13 @@ def test_language_table(imported):
     ]
 
 
-def test_term_ids_follow_entry_then_language_order(imported):
-    rows = query(imported, "SELECT entry_id, lang FROM term WHERE entry_id = 1 ORDER BY id")
-    assert rows == [(1, "en"), (1, "tr"), (1, "es"), (1, "de"), (1, "ar")]
+def test_term_ids_keep_the_first_three_languages_first(imported):
+    """English, Turkish and Spanish keep the ids of version 0.2.0; other languages follow."""
+    rows = query(imported, "SELECT id, entry_id, lang FROM term ORDER BY id")
+    first = [r for r in rows if r[2] in ("en", "tr", "es")]
+    assert [r[0] for r in first] == list(range(1, len(first) + 1))
+    assert rows[:3] == [(1, 1, "en"), (2, 1, "tr"), (3, 1, "es")]
+    assert rows[len(first)][1:] == (1, "de")
 
 
 def test_placeholders_and_empty_cells_have_no_row(imported):

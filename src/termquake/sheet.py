@@ -68,6 +68,11 @@ LANGUAGES = [
 ]
 SHEET_COLUMNS = {header: code for _, code, *_, header in LANGUAGES}
 
+# Term ids are permanent (CONTRIBUTING.md). Version 0.2.0 numbered the English,
+# Turkish and Spanish terms 1-1502; the languages added in 0.3.0 come after
+# them. So terms are numbered in two rounds, each sheet row by sheet row.
+FIRST_ROUND = ("en", "tr", "es")
+
 PLACEHOLDER = re.compile(r"^#(empty\d*|N/A|REF!|VALUE!|NAME\?|DIV/0!|ERROR!?|NULL!)$", re.I)
 _INVISIBLE = re.compile("[​‌‍⁠﻿­]")
 _LANG_IN_HEADER = re.compile(r"\(([A-Za-z][A-Za-z\- ]*)\)")
@@ -170,6 +175,7 @@ def import_terms(
     order = [code for _, code, *_ in LANGUAGES if code in lang_cols]
     domain_ids = {code: did for did, code, *_ in DOMAINS}
     seen: set[int] = set()
+    terms: list[tuple[int, str, str]] = []  # (entry, lang, text) in sheet order
     for line, row in enumerate(rows[head + 1 :], start=head + 2):
         row = row + [""] * (len(header) - len(row))
         if not any(cell.strip() for cell in row):
@@ -207,10 +213,11 @@ def import_terms(
                     stats.skipped.append((f"entry {nr}", lang, f"placeholder {cell.strip()!r}"))
                 continue
             _observe(stats, text, f"entry {nr} ({lang})", lang)
-            conn.execute(
-                "INSERT INTO term(entry_id, lang, text) VALUES (?, ?, ?)", (nr, lang, text)
-            )
+            terms.append((nr, lang, text))
             stats.terms[lang] = stats.terms.get(lang, 0) + 1
+
+    terms.sort(key=lambda t: t[1] not in FIRST_ROUND)  # stable: keeps sheet order in each round
+    conn.executemany("INSERT INTO term(entry_id, lang, text) VALUES (?, ?, ?)", terms)
 
 
 def import_definitions(conn: sqlite3.Connection, rows: list[list[str]], stats: ImportStats) -> None:
