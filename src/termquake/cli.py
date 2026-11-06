@@ -7,6 +7,7 @@ Everyday work:
   termquake export         build/termquake.db -> downloads and website data
   termquake all            build + export
   termquake clean          fix spaces, invisible characters and Unicode form in build/termquake.db
+  termquake review en      write the review sheet for one language (data/review/)
 
 Rare:
   termquake import-sheet   create data/db from the sheet snapshot in data/legacy (already done)
@@ -33,6 +34,7 @@ from .db import (
 )
 from .export import ExportError, export_all
 from .fetch import fetch_sheet
+from .review import build_review, read_suggestions, write_review_xlsx
 from .sheet import SheetError, import_sheet, write_report
 
 
@@ -87,6 +89,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("all", help="build + export")
     imp = sub.add_parser("import-sheet", help="create data/db from the sheet snapshot (once)")
     imp.add_argument("--force", action="store_true", help="overwrite an existing data/db")
+    review = sub.add_parser("review", help="write the review sheet (xlsx) for one language")
+    review.add_argument("lang", help="language code, e.g. en")
+    review.add_argument("--out", type=Path, help="output file (default: build/review-<lang>.xlsx)")
     fetch = sub.add_parser("fetch-sheet", help="download a Google Sheet's tabs as CSV (read-only)")
     fetch.add_argument("--sheet-id", required=True, help="ID of the sheet to read (use a copy)")
     fetch.add_argument("--out", type=Path, required=True, help="directory for the CSV files")
@@ -143,6 +148,30 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"cleaned {total} texts ({by_rule}); run `termquake dump` to save")
             else:
                 print("nothing to clean")
+        if args.command == "review":
+            if not paths.database.exists():
+                raise DatabaseError("build/termquake.db not found. Run `termquake build` first.")
+            conn = connect(paths.database)
+            try:
+                name = conn.execute(
+                    "SELECT name_en FROM language WHERE code = ?", (args.lang,)
+                ).fetchone()
+                if name is None:
+                    raise DatabaseError(f"no language with code {args.lang!r}")
+                suggestions = read_suggestions(
+                    paths.root / "data" / "review" / f"{args.lang}.suggestions.csv"
+                )
+                rows = build_review(conn, args.lang, suggestions)
+            finally:
+                conn.close()
+            counts: dict[str, int] = {}
+            for r in rows:
+                for rule in r.rules:
+                    counts[rule] = counts.get(rule, 0) + 1
+            out = args.out or paths.build / f"review-{args.lang}.xlsx"
+            write_review_xlsx(rows, name[0], out, counts)
+            need = sum(1 for r in rows if r.status == "review")
+            print(f"wrote {out}: {len(rows)} rows, {need} need a decision")
         if args.command == "fetch-sheet":
             changed = fetch_sheet(args.sheet_id, config.tabs, args.out)
             print("changed: " + ", ".join(changed) if changed else "no changes")
