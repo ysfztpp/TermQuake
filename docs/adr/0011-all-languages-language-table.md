@@ -32,9 +32,10 @@ The live sheet was compared with the 27 October snapshot on 6 November 2026
 - Website and downloads show every language that has at least one term.
 
 ## Consequences
-- Term ids were renumbered (entry by entry, languages in display order). The
-  English, Turkish and Spanish texts are byte-for-byte unchanged; every one of
-  the 12,415 cells matches the sheet snapshot.
+- Term ids are permanent: the English, Turkish and Spanish terms keep their
+  ids from version 0.2.0 (1–1502), and the other languages follow (1503 on).
+  (Version 0.3.0 had renumbered all terms by mistake; 0.4.0 restored the
+  0.2.0 ids.) Every one of the 12,415 cells matches the sheet snapshot.
 - `termquake.toml` no longer lists languages; the database does.
 - Adding a language: add a row to `language`, and a line to `entry_overview`
   in `db/schema.sql`.
