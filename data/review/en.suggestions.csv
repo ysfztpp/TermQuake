@@ -1,0 +1,40 @@
+entry_id,proposal,reason
+65,internal/external bleeding,"Keep as one term: splitting at '/' would give 'internal' + 'external bleeding'. Tr 'iç/dış kanama' has the same shape. Later the team may split the concept into two entries (internal bleeding, external bleeding)."
+70,,Same English and Turkish ('şişmek') as entry 363: consider merging the two entries.
+71,to pull a muscle,'to pull a muscle' is the fixed expression; without 'a muscle' the term means something else.
+122,jack | lever jack,Brackets mark an optional word. Tr 'kriko' is the general term; es lists 'gato de palanca' separately.
+148,fault | fault line,Optional word: both are used (tr 'fay (hattı)' has the same shape).
+208,organ donor,'organ donor' is the established term; 'donor (organ)' reads as a dictionary note.
+224,anti-inflammatory | anti-inflammatory drug,"Both forms are used; the bracket marks an optional word, not a note."
+244,basilar skull fracture | skull base fracture,"De 'Schädelbasisbruch' is the specific fracture; keep the specific concept, give the common synonym. Team decides whether the general 'skull fracture' belongs here."
+250,,"Same English as entry 472, but tr differs: 'havalı kırıcı' (pneumatic breaker) here."
+274,Disaster and Emergency Management Authority | AFAD [abbreviation],"Proper name: capitals stay. Tr gives the abbreviation AFAD, which is also used in English."
+285,anaesthesia,Tr 'anestezi' is the state/procedure (anaesthesia); the drug is entry 307 'anesthetic'.
+287,cardiac arrest | sudden cardiac arrest,Optional word: both forms are used for the same concept in emergency care.
+342,thermal underwear | thermal undergarment,"Optional word; 'thermal underwear' is the common form (tr 'içlik', es 'ropa interior térmica')."
+343,vacuum flask | thermos,Optional word; tr 'termos' and es 'termo' match 'thermos'.
+363,,Same English and Turkish ('şişmek') as entry 70: consider merging the two entries.
+365,National Medical Rescue Team | UMKE [abbreviation],Proper name: capitals stay.
+375,district governor,Spelling: 'governer' -> 'governor'.
+379,mukhtar | elected local representative,"'mukhtar' is the term itself (used in English texts about Turkey), not a note; the other is its description."
+411,pacemaker | cardiac pacemaker,Optional word: both forms name the same device.
+429,orthopedist | orthopedic surgeon,"'/' without spaces, but both sides are complete terms (synonyms); tr also lists two."
+446,bag valve mask | BVM [abbreviation] | Ambu bag,AMBU is a brand name; the standard term is 'bag valve mask' (BVM). Keep 'Ambu bag' as the everyday name.
+448,Heimlich maneuver | abdominal thrusts,'Heimlich' is a person's name: the capital stays.
+454,,Same concept as entry 471 (tr 'sara krizi' / 'epilepsi nöbeti'): consider merging and keeping both Turkish terms.
+468,,Possible duplicate: entry 5 is 'debris / rubble' (tr 'enkaz / moloz'); 468 and 469 split the same pair.
+469,,Possible duplicate of entry 5 (see 468).
+470,fill ground | made ground,"No English term. From tr 'dolgu zemin', ru 'засыпной фундамент', ar: ground made of placed fill."
+471,,Same concept as entry 454: consider merging.
+472,demolition hammer | electric breaker,"Tr 'hilti' is a brand name for an electric demolition hammer, not a pneumatic drill (that is entry 250)."
+474,advanced life support | ALS [abbreviation],"'infl' is not a term (probably a typing slip). Tr 'ileri yaşam desteği', ar and fa agree: advanced life support; compare entry 53 'basic life support'."
+477,nasogastric tube | NG tube [abbreviation],Abbreviation inside the term. Same concept as entry 506 (NG tube): consider merging the two entries.
+482,"gas burner | gas torch — note: acetylene, natural gas, propane","No English term. From tr 'gaz brülörü (asetilen, doğalgaz, propan)'."
+486,emergency corridor | emergency lane,No English term. Tr 'yaşam koridoru' is the lane kept free for emergency vehicles.
+487,suction set,Not a proper name: lower case like the other terms.
+489,scrubs | scrub top,Tr 'boks gömleği / boks önlüğü' is the scrub top worn by staff; entry 490 is the surgical gown.
+490,,Surgical gown (tr 'ameliyat önlüğü'). Entry 489 is a different item (scrubs).
+503,hemostatic agent | blood stopper,'blood stopper' is uncommon in English; the medical term is 'hemostatic agent'.
+506,nasogastric tube | NG tube [abbreviation],Same concept as entry 477 (tr 'nazogastrik sonda' / 'nazogastrik tüp'): consider merging.
+507,,Possible duplicate: entry 444 'injured' has the same Turkish term ('yaralı').
+528,International Search and Rescue Advisory Group | INSARAG [abbreviation],Proper name: capitals stay.
