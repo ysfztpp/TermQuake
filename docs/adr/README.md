@@ -19,3 +19,4 @@ don't rewrite old ones.
 | [0010](0010-four-tables-raw-data.md) | Four tables, data exactly as typed (languages: see 0011) |
 | [0011](0011-all-languages-language-table.md) | All sheet languages, in a `language` table |
 | [0012](0012-mechanical-cleanup.md) | Mechanical clean-up (spaces, invisible characters, Unicode form), enforced by a check |
+| [0013](0013-one-row-per-term.md) | One row per term, with type, note, origin and review status (schema v4) |

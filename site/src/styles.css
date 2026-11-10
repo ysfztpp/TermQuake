@@ -553,6 +553,43 @@ select {
   font-weight: 700;
 }
 
+.term-tag {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--fs-s);
+  font-weight: 400;
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+.term-tag--ai {
+  border-color: var(--signal);
+  color: var(--signal-ink);
+  background: var(--signal-soft);
+}
+.term-note {
+  font-size: var(--fs-s);
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.detail-more {
+  margin-top: 12px;
+}
+.detail-more > summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: var(--fs-s);
+}
+.detail-more > .detail-langs {
+  margin-top: 4px;
+}
+
 .definition {
   margin: 4px 0 0;
   max-width: 36rem;

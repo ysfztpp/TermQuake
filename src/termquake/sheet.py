@@ -175,7 +175,7 @@ def import_terms(
     order = [code for _, code, *_ in LANGUAGES if code in lang_cols]
     domain_ids = {code: did for did, code, *_ in DOMAINS}
     seen: set[int] = set()
-    terms: list[tuple[int, str, str]] = []  # (entry, lang, text) in sheet order
+    terms: list[tuple[int, str, str, str]] = []  # (entry, lang, text, type) in sheet order
     for line, row in enumerate(rows[head + 1 :], start=head + 2):
         row = row + [""] * (len(header) - len(row))
         if not any(cell.strip() for cell in row):
@@ -204,6 +204,8 @@ def import_terms(
             stats.note("Entry without a domain", f"entry {nr}")
         conn.execute("INSERT INTO entry(id, domain_id) VALUES (?, ?)", (nr, domain_id))
         stats.entries += 1
+        # Expressions are sentences: TBX term type "phrase".
+        term_type = "phrase" if domain_id == domain_ids.get("expressions") else "fullForm"
 
         for lang in order:
             cell = row[lang_cols[lang]]
@@ -213,11 +215,11 @@ def import_terms(
                     stats.skipped.append((f"entry {nr}", lang, f"placeholder {cell.strip()!r}"))
                 continue
             _observe(stats, text, f"entry {nr} ({lang})", lang)
-            terms.append((nr, lang, text))
+            terms.append((nr, lang, text, term_type))
             stats.terms[lang] = stats.terms.get(lang, 0) + 1
 
     terms.sort(key=lambda t: t[1] not in FIRST_ROUND)  # stable: keeps sheet order in each round
-    conn.executemany("INSERT INTO term(entry_id, lang, text) VALUES (?, ?, ?)", terms)
+    conn.executemany("INSERT INTO term(entry_id, lang, text, term_type) VALUES (?, ?, ?, ?)", terms)
 
 
 def import_definitions(conn: sqlite3.Connection, rows: list[list[str]], stats: ImportStats) -> None:

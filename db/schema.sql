@@ -4,9 +4,9 @@
 -- Five tables, one idea: an ENTRY is one meaning, and each language says it
 -- with a TERM. This is the concept-oriented model that professional
 -- termbases use (ISO 16642; TBX, ISO 30042), reduced to what the project
--- needs: the 31 language columns of the original sheet, as typed.
+-- needs: the 31 language columns of the original sheet.
 --
---   domain   1 ──< entry 1 ──< term         (one row per entry per language)
+--   domain   1 ──< entry 1 ──< term         (one row per term; a language may have several)
 --                        1 ──< definition   (one row per entry per language)
 --   language 1 ──< term, definition         (which language a text is in)
 --
@@ -56,18 +56,29 @@ CREATE TABLE entry (
 CREATE INDEX entry_domain_id_idx ON entry(domain_id);  -- foreign keys are indexed
 
 -- ---------------------------------------------------------------------
--- term: how one language says an entry, exactly as typed in the sheet.
--- One row per entry per language. A cell may hold several synonyms
--- separated by " / " (e.g. 'enkaz / moloz'): they are kept together, as
--- typed, until the team decides how to split them.
--- TBX: langSec + termSec.
+-- term: how one language says an entry. One row per term: synonyms and
+-- abbreviations are separate rows, ordered by sort_order (1 = main term).
+-- Cells from the sheet that still hold several synonyms ('enkaz / moloz')
+-- stay one row until the language's review decides how to split them.
+-- origin says where a text came from (the sheet, the team, or an AI
+-- suggestion); review_status says whether a person has checked it.
+-- TBX: langSec + termSec (termType, note).
 -- ---------------------------------------------------------------------
 CREATE TABLE term (
-  id        INTEGER PRIMARY KEY,
-  entry_id  INTEGER NOT NULL REFERENCES entry(id) ON DELETE CASCADE,
-  lang      TEXT NOT NULL REFERENCES language(code) ON DELETE RESTRICT,
-  text      TEXT NOT NULL CHECK (trim(text) <> ''),  -- no blank terms: an empty cell has no row
-  UNIQUE (entry_id, lang)                             -- one cell per entry and language
+  id            INTEGER PRIMARY KEY,
+  entry_id      INTEGER NOT NULL REFERENCES entry(id) ON DELETE CASCADE,
+  lang          TEXT NOT NULL REFERENCES language(code) ON DELETE RESTRICT,
+  text          TEXT NOT NULL CHECK (trim(text) <> ''),    -- no blank terms
+  sort_order    INTEGER NOT NULL DEFAULT 1 CHECK (sort_order >= 1),  -- 1 = main term, shown first
+  term_type     TEXT NOT NULL DEFAULT 'fullForm'           -- TBX-Basic term types
+                CHECK (term_type IN ('fullForm', 'abbreviation', 'acronym', 'shortForm', 'variant', 'phrase')),
+  note          TEXT CHECK (note IS NULL OR trim(note) <> ''),  -- usage note, e.g. 'tool'
+  origin        TEXT NOT NULL DEFAULT 'sheet'              -- where the text came from
+                CHECK (origin IN ('sheet', 'team', 'ai')),
+  review_status TEXT NOT NULL DEFAULT 'unreviewed'         -- has a person checked it in review?
+                CHECK (review_status IN ('unreviewed', 'reviewed')),
+  UNIQUE (entry_id, lang, text),                           -- no duplicate term in a language
+  UNIQUE (entry_id, lang, sort_order)                      -- one position per term
 );
 
 CREATE INDEX term_lang_idx ON term(lang);
@@ -89,47 +100,47 @@ CREATE TABLE definition (
 -- entry_overview: the database read back as the sheet looked
 -- (one row per entry, one column per language). A view stores nothing:
 -- it is a saved query that runs every time it is opened.
--- Each language column picks that language's term from the entry's rows
--- (MAX(CASE ...) with GROUP BY turns rows into columns).
+-- Each language column joins that language's terms in order, main term
+-- first, with ' / ' (group_concat with GROUP BY turns rows into columns).
 -- ---------------------------------------------------------------------
 CREATE VIEW entry_overview AS
 SELECT e.id,
        d.name_en AS domain,
-       MAX(CASE WHEN t.lang = 'en' THEN t.text END) AS "en",
-       MAX(CASE WHEN t.lang = 'tr' THEN t.text END) AS "tr",
-       MAX(CASE WHEN t.lang = 'es' THEN t.text END) AS "es",
-       MAX(CASE WHEN t.lang = 'de' THEN t.text END) AS "de",
-       MAX(CASE WHEN t.lang = 'ru' THEN t.text END) AS "ru",
-       MAX(CASE WHEN t.lang = 'fr' THEN t.text END) AS "fr",
-       MAX(CASE WHEN t.lang = 'kmr' THEN t.text END) AS "kmr",
-       MAX(CASE WHEN t.lang = 'zza' THEN t.text END) AS "zza",
-       MAX(CASE WHEN t.lang = 'ar' THEN t.text END) AS "ar",
-       MAX(CASE WHEN t.lang = 'el' THEN t.text END) AS "el",
-       MAX(CASE WHEN t.lang = 'ja' THEN t.text END) AS "ja",
-       MAX(CASE WHEN t.lang = 'he' THEN t.text END) AS "he",
-       MAX(CASE WHEN t.lang = 'it' THEN t.text END) AS "it",
-       MAX(CASE WHEN t.lang = 'hy' THEN t.text END) AS "hy",
-       MAX(CASE WHEN t.lang = 'nl' THEN t.text END) AS "nl",
-       MAX(CASE WHEN t.lang = 'zh-Hans' THEN t.text END) AS "zh-Hans",
-       MAX(CASE WHEN t.lang = 'zh-Hant' THEN t.text END) AS "zh-Hant",
-       MAX(CASE WHEN t.lang = 'bg' THEN t.text END) AS "bg",
-       MAX(CASE WHEN t.lang = 'ko' THEN t.text END) AS "ko",
-       MAX(CASE WHEN t.lang = 'fa' THEN t.text END) AS "fa",
-       MAX(CASE WHEN t.lang = 'hi' THEN t.text END) AS "hi",
-       MAX(CASE WHEN t.lang = 'pt' THEN t.text END) AS "pt",
-       MAX(CASE WHEN t.lang = 'sv' THEN t.text END) AS "sv",
-       MAX(CASE WHEN t.lang = 'ro' THEN t.text END) AS "ro",
-       MAX(CASE WHEN t.lang = 'sr' THEN t.text END) AS "sr",
-       MAX(CASE WHEN t.lang = 'mk' THEN t.text END) AS "mk",
-       MAX(CASE WHEN t.lang = 'hu' THEN t.text END) AS "hu",
-       MAX(CASE WHEN t.lang = 'fi' THEN t.text END) AS "fi",
-       MAX(CASE WHEN t.lang = 'sq' THEN t.text END) AS "sq",
-       MAX(CASE WHEN t.lang = 'cs' THEN t.text END) AS "cs",
-       MAX(CASE WHEN t.lang = 'pl' THEN t.text END) AS "pl",
+       group_concat(CASE WHEN t.lang = 'en' THEN t.text END, ' / ') AS "en",
+       group_concat(CASE WHEN t.lang = 'tr' THEN t.text END, ' / ') AS "tr",
+       group_concat(CASE WHEN t.lang = 'es' THEN t.text END, ' / ') AS "es",
+       group_concat(CASE WHEN t.lang = 'de' THEN t.text END, ' / ') AS "de",
+       group_concat(CASE WHEN t.lang = 'ru' THEN t.text END, ' / ') AS "ru",
+       group_concat(CASE WHEN t.lang = 'fr' THEN t.text END, ' / ') AS "fr",
+       group_concat(CASE WHEN t.lang = 'kmr' THEN t.text END, ' / ') AS "kmr",
+       group_concat(CASE WHEN t.lang = 'zza' THEN t.text END, ' / ') AS "zza",
+       group_concat(CASE WHEN t.lang = 'ar' THEN t.text END, ' / ') AS "ar",
+       group_concat(CASE WHEN t.lang = 'el' THEN t.text END, ' / ') AS "el",
+       group_concat(CASE WHEN t.lang = 'ja' THEN t.text END, ' / ') AS "ja",
+       group_concat(CASE WHEN t.lang = 'he' THEN t.text END, ' / ') AS "he",
+       group_concat(CASE WHEN t.lang = 'it' THEN t.text END, ' / ') AS "it",
+       group_concat(CASE WHEN t.lang = 'hy' THEN t.text END, ' / ') AS "hy",
+       group_concat(CASE WHEN t.lang = 'nl' THEN t.text END, ' / ') AS "nl",
+       group_concat(CASE WHEN t.lang = 'zh-Hans' THEN t.text END, ' / ') AS "zh-Hans",
+       group_concat(CASE WHEN t.lang = 'zh-Hant' THEN t.text END, ' / ') AS "zh-Hant",
+       group_concat(CASE WHEN t.lang = 'bg' THEN t.text END, ' / ') AS "bg",
+       group_concat(CASE WHEN t.lang = 'ko' THEN t.text END, ' / ') AS "ko",
+       group_concat(CASE WHEN t.lang = 'fa' THEN t.text END, ' / ') AS "fa",
+       group_concat(CASE WHEN t.lang = 'hi' THEN t.text END, ' / ') AS "hi",
+       group_concat(CASE WHEN t.lang = 'pt' THEN t.text END, ' / ') AS "pt",
+       group_concat(CASE WHEN t.lang = 'sv' THEN t.text END, ' / ') AS "sv",
+       group_concat(CASE WHEN t.lang = 'ro' THEN t.text END, ' / ') AS "ro",
+       group_concat(CASE WHEN t.lang = 'sr' THEN t.text END, ' / ') AS "sr",
+       group_concat(CASE WHEN t.lang = 'mk' THEN t.text END, ' / ') AS "mk",
+       group_concat(CASE WHEN t.lang = 'hu' THEN t.text END, ' / ') AS "hu",
+       group_concat(CASE WHEN t.lang = 'fi' THEN t.text END, ' / ') AS "fi",
+       group_concat(CASE WHEN t.lang = 'sq' THEN t.text END, ' / ') AS "sq",
+       group_concat(CASE WHEN t.lang = 'cs' THEN t.text END, ' / ') AS "cs",
+       group_concat(CASE WHEN t.lang = 'pl' THEN t.text END, ' / ') AS "pl",
        (SELECT text FROM definition df WHERE df.entry_id = e.id AND df.lang = 'tr') AS definition_tr
 FROM entry e
 LEFT JOIN domain d ON d.id = e.domain_id
-LEFT JOIN term t   ON t.entry_id = e.id
+LEFT JOIN (SELECT * FROM term ORDER BY entry_id, lang, sort_order) t ON t.entry_id = e.id
 GROUP BY e.id;
 
-PRAGMA user_version = 3;  -- schema version, checked by the tools
+PRAGMA user_version = 4;  -- schema version, checked by the tools

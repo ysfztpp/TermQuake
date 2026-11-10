@@ -51,6 +51,13 @@ const strings = {
   copy: { en: "Copy", tr: "Kopyala", es: "Copiar" },
   copied: { en: "Copied", tr: "Kopyalandı", es: "Copiado" },
   definition: { en: "Definition", tr: "Tanım", es: "Definición" },
+  otherLanguages: { en: "Other languages ({n})", tr: "Diğer diller ({n})", es: "Otros idiomas ({n})" },
+  abbreviation: { en: "abbreviation", tr: "kısaltma", es: "abreviatura" },
+  aiSuggestion: {
+    en: "AI suggestion, not verified",
+    tr: "Yapay zekâ önerisi, doğrulanmadı",
+    es: "Sugerencia de IA, sin verificar",
+  },
   source: { en: "Source", tr: "Kaynak", es: "Fuente" },
   entry: { en: "Entry {n}", tr: "Kayıt {n}", es: "Entrada {n}" },
   report: {

@@ -53,10 +53,18 @@ class ExportError(RuntimeError):
 
 
 @dataclass
+class Term:
+    text: str
+    type: str  # TBX term type: fullForm, abbreviation, phrase, ...
+    note: str | None
+    origin: str  # sheet, team or ai
+
+
+@dataclass
 class Entry:
     id: int
     domain: str | None  # domain code
-    terms: dict[str, str]  # lang -> cell text, as typed
+    terms: dict[str, list[Term]]  # lang -> terms, main term first
     definitions: dict[str, tuple[str, str | None]]  # lang -> (text, source)
 
 
@@ -67,8 +75,11 @@ def load_entries(conn: sqlite3.Connection) -> list[Entry]:
             "SELECT e.id, d.code FROM entry e LEFT JOIN domain d ON d.id = e.domain_id ORDER BY e.id"
         )
     }
-    for eid, lang, text in conn.execute("SELECT entry_id, lang, text FROM term ORDER BY id"):
-        entries[eid].terms[lang] = text
+    for eid, lang, text, ttype, note, origin in conn.execute(
+        "SELECT entry_id, lang, text, term_type, note, origin FROM term "
+        "ORDER BY entry_id, lang, sort_order"
+    ):
+        entries[eid].terms.setdefault(lang, []).append(Term(text, ttype, note, origin))
     for eid, lang, text, source in conn.execute(
         "SELECT entry_id, lang, text, source FROM definition ORDER BY id"
     ):
@@ -116,10 +127,15 @@ def write_tbx(
                 ET.SubElement(grp, q("descrip"), {"type": "definition"}).text = text
                 if source:
                     ET.SubElement(grp, q("admin"), {"type": "source"}).text = source
-            ts = ET.SubElement(ls, q("termSec"))
-            ET.SubElement(ts, q("term")).text = e.terms[lang]
-            if e.domain == "expressions":
-                ET.SubElement(ts, q("termNote"), {"type": "termType"}).text = "phrase"
+            for t in e.terms[lang]:
+                ts = ET.SubElement(ls, q("termSec"))
+                ET.SubElement(ts, q("term")).text = t.text
+                if t.type != "fullForm":
+                    ET.SubElement(ts, q("termNote"), {"type": "termType"}).text = t.type
+                if t.note:
+                    ET.SubElement(ts, q("note")).text = t.note
+                if t.origin == "ai":
+                    ET.SubElement(ts, q("note")).text = "AI suggestion, not verified"
     ET.indent(root, space="  ")
     path.write_bytes(
         b'<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="utf-8")
@@ -145,7 +161,10 @@ def write_csv(entries: list[Entry], languages: list[str], path: Path) -> None:
                 [
                     e.id,
                     e.domain or "",
-                    *[_cell(e.terms.get(lang, "")) for lang in languages],
+                    *[
+                        _cell(" / ".join(t.text for t in e.terms.get(lang, [])))
+                        for lang in languages
+                    ],
                     *[_cell(e.definitions.get(lang, ("",))[0]) for lang in languages],
                 ]
             )
@@ -205,8 +224,31 @@ def write_site_json(
     )
 
 
+def _term_meta(t: Term) -> dict:
+    meta: dict = {}
+    if t.type == "abbreviation" or t.type == "acronym":
+        meta["ab"] = 1
+    if t.note:
+        meta["n"] = t.note
+    if t.origin == "ai":
+        meta["ai"] = 1
+    return meta
+
+
 def _entry_json(e: Entry) -> dict:
-    item: dict = {"id": e.id, "t": {lang: [text.strip()] for lang, text in e.terms.items()}}
+    """t: lang -> terms (main term first). m: lang -> per-term details, only where
+    some term of that language has a note, is an abbreviation or is an AI suggestion."""
+    item: dict = {
+        "id": e.id,
+        "t": {lang: [t.text.strip() for t in ts] for lang, ts in e.terms.items()},
+    }
+    meta = {
+        lang: [_term_meta(t) for t in ts]
+        for lang, ts in e.terms.items()
+        if any(_term_meta(t) for t in ts)
+    }
+    if meta:
+        item["m"] = meta
     if e.domain:
         item["d"] = e.domain
     if e.definitions:
