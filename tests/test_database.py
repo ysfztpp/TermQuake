@@ -92,7 +92,10 @@ def test_dump_is_canonical_and_round_trips(imported):
 def test_one_row_per_line(imported):
     lines = (imported.data_db / "term.sql").read_text("utf-8").splitlines()
     assert lines[0].startswith("-- TermQuake data: table term")
-    prefix = "INSERT INTO term (id, entry_id, lang, text) VALUES ("
+    prefix = (
+        "INSERT INTO term (id, entry_id, lang, text, sort_order, term_type, note, origin, "
+        "review_status) VALUES ("
+    )
     assert all(line.startswith(prefix) and line.endswith(");") for line in lines[1:])
 
 

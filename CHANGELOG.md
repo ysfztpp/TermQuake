@@ -3,6 +3,19 @@
 Software changes. Terminology changes are in the history of `data/db/`
 (`git log -p data/db/term.sql`) and in data releases (`data-v*` tags).
 
+## 0.5.0 (2026-11-10)
+
+- **Schema v4: one row per term** ([ADR 0013](docs/adr/0013-one-row-per-term.md)):
+  `term` gets `sort_order`, `term_type` (TBX), `note`, `origin` and
+  `review_status`. Existing ids and texts unchanged; expressions are `phrase`.
+- TBX, CSV and website data carry several terms per language, with type,
+  note and AI origin.
+- **Website: the selected language pair only.** A term's panel shows the two
+  selected languages; the others are in a closed "Other languages (N)"
+  section that lists only languages with a term. Full-screen mode switches
+  between the pair only. Abbreviations, notes and AI suggestions are labelled.
+- `termquake review <lang>`: review sheets for standardising one language at a time.
+
 ## 0.4.0 (2026-11-06)
 
 - **Mechanical clean-up** ([ADR 0012](docs/adr/0012-mechanical-cleanup.md)):

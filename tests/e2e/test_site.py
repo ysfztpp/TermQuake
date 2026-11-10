@@ -136,3 +136,23 @@ def test_works_offline_after_first_visit(app, expect):
     expect(app.locator(".row").first).to_contain_text("deprem")
     expect(app.locator(".status")).to_be_visible()  # tells the user they're offline
     app.context.set_offline(False)
+
+
+def test_detail_shows_the_pair_and_hides_other_languages(app, expect):
+    app.goto(URL + "#/e/5")
+    panel = app.locator("#entry-5")
+    expect(panel).to_be_visible()
+    pair = panel.locator(":scope > .detail-langs > .detail-lang")
+    expect(pair).to_have_count(2)  # only the selected languages
+    more = panel.locator(".detail-more")
+    expect(more.locator("summary")).to_contain_text(re.compile(r"\(\d+\)"))
+    expect(more.locator(".detail-lang").first).not_to_be_visible()  # closed by default
+    more.locator("summary").click()
+    expect(more.locator(".detail-lang").first).to_be_visible()
+    expect(more).to_contain_text("Deutsch")
+
+
+def test_show_mode_offers_only_the_pair(app, expect):
+    app.goto(URL + "#/e/5")
+    app.locator("#entry-5 .button--primary").click()
+    expect(app.locator(".show .show-lang")).to_have_count(2)

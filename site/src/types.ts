@@ -28,6 +28,17 @@ export interface Entry {
   d?: string;
   /** Definitions by language: text and optional source. */
   def?: Record<string, { x: string; s?: string }>;
+  /** Details per term, aligned with `t`; only for languages where some term has one. */
+  m?: Record<string, TermMeta[]>;
+}
+
+export interface TermMeta {
+  /** 1 when the term is an abbreviation or acronym. */
+  ab?: 1;
+  /** Usage note, e.g. "tool". */
+  n?: string;
+  /** 1 when the term is an AI suggestion that no person has verified yet. */
+  ai?: 1;
 }
 
 /** "all", or a domain code. */

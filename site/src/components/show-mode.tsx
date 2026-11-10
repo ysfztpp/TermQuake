@@ -17,7 +17,11 @@ interface Props {
  * rescuer. Keeps the screen awake while open where the browser allows it.
  */
 export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClose }: Props) {
-  const available = languages.filter((l) => entry.t[l.code]?.length);
+  // Only the selected pair, target first, and only the sides that have a term.
+  const available = [initialLang, sourceLang]
+    .filter((code, i, all) => all.indexOf(code) === i)
+    .map((code) => languages.find((l) => l.code === code))
+    .filter((l): l is Language => !!l && (entry.t[l.code]?.length ?? 0) > 0);
   const [lang, setLang] = useState(
     available.some((l) => l.code === initialLang) ? initialLang : (available[0]?.code ?? initialLang),
   );

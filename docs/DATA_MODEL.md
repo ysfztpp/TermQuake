@@ -35,7 +35,12 @@ erDiagram
         INTEGER id PK
         INTEGER entry_id FK
         TEXT lang FK "language.code"
-        TEXT text "as typed in the sheet"
+        TEXT text
+        INTEGER sort_order "1 = main term"
+        TEXT term_type "fullForm, abbreviation, phrase, ..."
+        TEXT note "usage note, may be empty"
+        TEXT origin "sheet, team or ai"
+        TEXT review_status "unreviewed or reviewed"
     }
     definition {
         INTEGER id PK
@@ -55,7 +60,7 @@ The full definitions, with comments, are in [`db/schema.sql`](../db/schema.sql).
 | `language` | a language of the termbase (a language column of the sheet) | 31 | `id`, `code`, `name_en`, `name_native`, `direction` |
 | `domain` | a value of the sheet's Domain column | 6 | `id`, `code`, `name_en`, `name_tr`, `name_es` |
 | `entry` | one meaning (one row of the sheet) | 523 | `id` (the sheet's Nr.), `domain_id` |
-| `term` | what one language calls an entry (one cell of the sheet) | 12,415 | `id`, `entry_id`, `lang`, `text` |
+| `term` | one way a language says an entry (synonyms and abbreviations are separate rows) | 12,415 | `id`, `entry_id`, `lang`, `text`, `sort_order`, `term_type`, `note`, `origin`, `review_status` |
 | `definition` | what an entry means in one language | 14 | `id`, `entry_id`, `lang`, `text`, `source` |
 
 Plus one **view**, `entry_overview`: a saved query that shows the data the way
@@ -89,9 +94,12 @@ SELECT lang, text FROM term WHERE entry_id = 5;
 The same rows in the file git stores (`data/db/term.sql`), one line per row:
 
 ```sql
-INSERT INTO term (id, entry_id, lang, text) VALUES (13, 5, 'en', 'debris / rubble');
-INSERT INTO term (id, entry_id, lang, text) VALUES (14, 5, 'tr', 'enkaz / moloz');
-INSERT INTO term (id, entry_id, lang, text) VALUES (15, 5, 'es', 'escombros');
+INSERT INTO term (id, entry_id, lang, text, sort_order, term_type, note, origin, review_status) VALUES (13, 5, 'en', 'debris / rubble', 1, 'fullForm', NULL, 'sheet', 'unreviewed');
+INSERT INTO term (id, entry_id, lang, text, sort_order, term_type, note, origin, review_status) VALUES (14, 5, 'tr', 'enkaz / moloz', 1, 'fullForm', NULL, 'sheet', 'unreviewed');
+INSERT INTO term (id, entry_id, lang, text, sort_order, term_type, note, origin, review_status) VALUES (15, 5, 'es', 'escombros', 1, 'fullForm', NULL, 'sheet', 'unreviewed');
+
+When the English review splits `debris / rubble`, the first row becomes
+`debris` (sort_order 1) and a new row `rubble` (sort_order 2) is added.
 ```
 
 ## The rules the database enforces
@@ -107,7 +115,11 @@ when someone tries to save it.
 | Only languages in the `language` table | `lang REFERENCES language(code)` | typos such as `'TR'` or `'tur'` |
 | A language in use cannot be deleted | `ON DELETE RESTRICT` | terms in a language that no longer exists |
 | Writing direction is left-to-right or right-to-left | `CHECK (direction IN ('ltr', 'rtl'))` | values the website cannot use |
-| One cell per entry and language | `UNIQUE (entry_id, lang)` | the same cell entered twice |
+| A term appears once per entry and language | `UNIQUE (entry_id, lang, text)` | the same term entered twice |
+| Each term has its own place in the order | `UNIQUE (entry_id, lang, sort_order)`, `CHECK (sort_order >= 1)` | two "main" terms |
+| Term types are the TBX ones | `CHECK (term_type IN ('fullForm', 'abbreviation', 'acronym', 'shortForm', 'variant', 'phrase'))` | made-up types tools cannot read |
+| Where a term came from is known | `CHECK (origin IN ('sheet', 'team', 'ai'))` | AI text that looks like human text |
+| Review status is one of two values | `CHECK (review_status IN ('unreviewed', 'reviewed'))` | free-text statuses |
 | A domain in use cannot be deleted | `ON DELETE RESTRICT` | entries pointing to nothing |
 | Deleting an entry deletes its terms | `ON DELETE CASCADE` | leftover terms of a removed entry |
 
@@ -121,7 +133,7 @@ SQLite checks foreign keys only when `PRAGMA foreign_keys = ON`. The
 - A column that points to another table is named `<table>_id` and is a foreign key.
 - Foreign keys have an index (`entry_domain_id_idx`, `term_lang_idx`); `UNIQUE` constraints create their own.
 - Languages use BCP 47 codes: `en`, `tr`, `kmr` (Kurmanji Kurdish), `zh-Hans` (simplified Chinese).
-- The schema has a version number (`PRAGMA user_version = 3`), raised whenever the tables change.
+- The schema has a version number (`PRAGMA user_version = 4`), raised whenever the tables change.
 - Every column has a comment in `db/schema.sql` saying what it holds.
 
 ## The data: as typed, mechanically cleaned
@@ -152,9 +164,10 @@ the rest is recommended. The download `termquake.tbx` maps as follows:
 | `conceptEntry` | `entry` (id `tq5` for entry 5) |
 | `descrip type="subjectField"` | `domain.name_en` |
 | `langSec xml:lang` | `term.lang` |
-| `termSec / term` | `term.text` |
+| `termSec / term` (one per term, in `sort_order`) | `term.text` |
+| `termNote type="termType"` | `term.term_type` (written when not `fullForm`) |
+| `note` | `term.note`; and "AI suggestion, not verified" when `origin = 'ai'` |
 | `descrip type="definition"` + `admin type="source"` | `definition.text`, `definition.source` |
-| `termNote type="termType"` = `phrase` | entries in the Expressions domain |
 
 TBX defines files for exchanging terminology, not how a database must be laid
 out inside, so a small database is fully compatible with it.
@@ -165,5 +178,4 @@ out inside, so a small database is fully compatible with it.
 |---|---|---|
 | A change-history table | git already records every change, by whom and why | not needed |
 | Votes, contributors | there is no editing website; changes go through GitHub | if an editing website is built |
-| Who wrote a term (`origin`) and its review status | every term comes from the sheet | before AI-generated terms are added (roadmap phase 3) |
 | Part of speech, gender, usage status | nobody fills them yet | when the team standardises entries |

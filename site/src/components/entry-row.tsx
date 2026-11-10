@@ -57,19 +57,16 @@ export function EntryRow({ entry, from, to, languages, domains, ui, open, onTogg
         {domain && <span class="row-domain">{domain.label[ui] ?? domain.label.en}</span>}
       </button>
       {open && (
-        <Detail entry={entry} order={orderLanguages(languages, from, to)} ui={ui} id={panelId} onShow={onShow} to={to} />
+        <Detail entry={entry} languages={languages} from={from} ui={ui} id={panelId} onShow={onShow} to={to} />
       )}
     </li>
   );
 }
 
-function orderLanguages(languages: Language[], from: Language, to: Language): Language[] {
-  return [from, to, ...languages.filter((l) => l.code !== from.code && l.code !== to.code)];
-}
-
-function Detail({ entry, order, ui, id, onShow, to }: {
+function Detail({ entry, languages, from, ui, id, onShow, to }: {
   entry: Entry;
-  order: Language[];
+  languages: Language[];
+  from: Language;
   ui: UiLang;
   id: string;
   onShow: (id: number) => void;
@@ -79,6 +76,10 @@ function Detail({ entry, order, ui, id, onShow, to }: {
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
     translate(ui, key, vars);
   const target = entry.t[to.code] ?? [];
+  // Languages other than the selected pair, only those that have a term.
+  const others = languages.filter(
+    (l) => l.code !== from.code && l.code !== to.code && (entry.t[l.code]?.length ?? 0) > 0,
+  );
   const reportTitle = `Entry ${entry.id}: ${entry.t.en?.[0] ?? entry.t.tr?.[0] ?? ""}`;
   const reportUrl = `${REPO}/issues/new?template=term-correction.yml&entry=${entry.id}&title=${encodeURIComponent(reportTitle)}`;
 
@@ -95,36 +96,20 @@ function Detail({ entry, order, ui, id, onShow, to }: {
   return (
     <div class="detail" id={id}>
       <dl class="detail-langs">
-        {order.map((lang) => {
-          const terms = entry.t[lang.code] ?? [];
-          const def = entry.def?.[lang.code];
-          return (
-            <div class="detail-lang" key={lang.code}>
-              <dt>{lang.native}</dt>
-              <dd lang={lang.code} dir={lang.dir}>
-                {terms.length ? (
-                  <ul class="term-list">
-                    {terms.map((term, i) => (
-                      <li key={term} class={i === 0 ? "term-main" : undefined}>
-                        {term}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p class="row-missing">{t("missing", { lang: lang.native })}</p>
-                )}
-                {def && (
-                  <p class="definition">
-                    <span class="definition-label">{t("definition")}: </span>
-                    {def.x}
-                    {def.s && <span class="definition-source"> ({t("source")}: {def.s})</span>}
-                  </p>
-                )}
-              </dd>
-            </div>
-          );
-        })}
+        {(from.code === to.code ? [from] : [from, to]).map((lang) => (
+          <LangTerms key={lang.code} entry={entry} lang={lang} ui={ui} />
+        ))}
       </dl>
+      {others.length > 0 && (
+        <details class="detail-more">
+          <summary>{t("otherLanguages", { n: others.length })}</summary>
+          <dl class="detail-langs">
+            {others.map((lang) => (
+              <LangTerms key={lang.code} entry={entry} lang={lang} ui={ui} />
+            ))}
+          </dl>
+        </details>
+      )}
 
       <div class="detail-actions">
         {target.length > 0 && (
@@ -146,6 +131,51 @@ function Detail({ entry, order, ui, id, onShow, to }: {
           {t("report")}
         </a>
       </p>
+    </div>
+  );
+}
+
+
+/** One language of an entry: its terms (main term first) and its definition. */
+function LangTerms({ entry, lang, ui }: { entry: Entry; lang: Language; ui: UiLang }) {
+  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
+    translate(ui, key, vars);
+  const terms = entry.t[lang.code] ?? [];
+  const meta = entry.m?.[lang.code] ?? [];
+  const def = entry.def?.[lang.code];
+  return (
+    <div class="detail-lang">
+      <dt>{lang.native}</dt>
+      <dd lang={lang.code} dir={lang.dir}>
+        {terms.length ? (
+          <ul class="term-list">
+            {terms.map((term, i) => {
+              const m = meta[i] ?? {};
+              return (
+                <li key={term} class={i === 0 ? "term-main" : undefined}>
+                  {term}
+                  {m.ab && <span class="term-tag" lang={ui}>{t("abbreviation")}</span>}
+                  {m.n && <span class="term-note"> ({m.n})</span>}
+                  {m.ai && (
+                    <span class="term-tag term-tag--ai" lang={ui}>
+                      {t("aiSuggestion")}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="row-missing">{t("missing", { lang: lang.native })}</p>
+        )}
+        {def && (
+          <p class="definition">
+            <span class="definition-label">{t("definition")}: </span>
+            {def.x}
+            {def.s && <span class="definition-source"> ({t("source")}: {def.s})</span>}
+          </p>
+        )}
+      </dd>
     </div>
   );
 }
