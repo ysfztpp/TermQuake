@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { fold } from "./fold";
-import { browse, buildIndex, initial, scoreTerm, search } from "./search";
+import { browse, buildIndex, distance, initial, scoreTerm, search, suggest, withoutAi } from "./search";
 import type { Entry } from "./types";
 
 const shared = JSON.parse(
@@ -91,5 +91,34 @@ describe("browse", () => {
     expect(initial("ilk yardım", "en")).toBe("I");
     expect(initial("(sudden) cardiac arrest", "en")).toBe("S");
     expect(initial("112'yi arayın", "tr")).toBe("#");
+  });
+});
+
+describe("experimental: all languages, typos, AI filter", () => {
+  const entries: Entry[] = [
+    { id: 1, t: { tr: ["enkaz"], en: ["debris", "rubble"], de: ["Trümmer"] }, m: { en: [{}, { ai: 1 }] } },
+    { id: 2, t: { tr: ["deprem"], sr: ["земљотрес"] }, m: { sr: [{ ai: 1 }] }, def: { en: { x: "A shaking.", ai: 1 } } },
+  ];
+  const idx = buildIndex(entries);
+
+  it("finds other languages only when asked, below pair matches", () => {
+    const opts = { langs: ["tr", "en"], preferLang: "tr", filter: "all" as const };
+    expect(search(idx, "trummer", opts)).toHaveLength(0);
+    const hits = search(idx, "trummer", { ...opts, allLangs: true });
+    expect(hits.map((h) => [h.entry.id, h.lang])).toEqual([[1, "de"]]);
+  });
+
+  it("suggests the nearest terms for a typo", () => {
+    expect(suggest(idx, "depram", ["tr", "en"])).toEqual(["deprem"]);
+    expect(suggest(idx, "xyzxyz", ["tr", "en"])).toEqual([]);
+    expect(distance("enkaz", "enkas", 2)).toBe(1);
+  });
+
+  it("removes AI terms and definitions, and languages left empty", () => {
+    const clean = withoutAi(entries);
+    expect(clean[0].t.en).toEqual(["debris"]);
+    expect(clean[1].t.sr).toBeUndefined();
+    expect(clean[1].def).toBeUndefined();
+    expect(clean[1].t.tr).toEqual(["deprem"]);
   });
 });

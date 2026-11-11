@@ -27,7 +27,7 @@ export interface Entry {
   /** Domain code ("expressions" for phrases and sentences). Absent when the sheet had none. */
   d?: string;
   /** Definitions by language: text and optional source. */
-  def?: Record<string, { x: string; s?: string }>;
+  def?: Record<string, { x: string; s?: string; ai?: 1 }>;
   /** Details per term, aligned with `t`; only for languages where some term has one. */
   m?: Record<string, TermMeta[]>;
 }

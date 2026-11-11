@@ -10,6 +10,8 @@ export interface Prefs {
   to?: string;
   ui?: string;
   filter?: string;
+  /** false hides AI suggestions. */
+  showAi?: boolean;
 }
 
 export function loadPrefs(): Prefs {

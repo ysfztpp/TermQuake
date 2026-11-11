@@ -51,6 +51,8 @@ export interface SearchOptions {
   preferLang: string;
   filter: Filter;
   limit?: number;
+  /** Also find terms in languages outside the pair (ranked below the pair's own matches). */
+  allLangs?: boolean;
 }
 
 export function search(index: IndexedTerm[], query: string, opts: SearchOptions): Hit[] {
@@ -58,10 +60,12 @@ export function search(index: IndexedTerm[], query: string, opts: SearchOptions)
   if (!q) return [];
   const best = new Map<number, Hit>();
   for (const term of index) {
-    if (!opts.langs.includes(term.lang) || !matchesFilter(term.entry, opts.filter)) continue;
+    const inPair = opts.langs.includes(term.lang);
+    if ((!inPair && !opts.allLangs) || !matchesFilter(term.entry, opts.filter)) continue;
     const base = scoreTerm(term.key, q);
     if (!base) continue;
-    const score = base + (term.lang === opts.preferLang ? 4 : 0) + (term.primary ? 2 : 0);
+    const score =
+      base + (inPair ? 0 : -25) + (term.lang === opts.preferLang ? 4 : 0) + (term.primary ? 2 : 0);
     const current = best.get(term.entry.id);
     if (!current || score > current.score) {
       best.set(term.entry.id, { entry: term.entry, score, lang: term.lang, text: term.text });
@@ -94,4 +98,66 @@ export function initial(text: string | undefined, lang: string): string {
   if (!text) return "#";
   const first = [...text.replace(/^[^\p{L}\p{N}]+/u, "")][0] ?? "#";
   return /\p{N}/u.test(first) ? "#" : first.toLocaleUpperCase(lang);
+}
+
+/** Edit distance between two strings, stopping early once it exceeds `max`. */
+export function distance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      const v = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      row.push(v);
+      if (v < best) best = v;
+    }
+    if (best > max) return max + 1;
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** "Did you mean": terms within one or two typos of the query, closest first. */
+export function suggest(index: IndexedTerm[], query: string, langs: string[], max = 3): string[] {
+  const q = fold(query);
+  if (q.length < 3) return [];
+  const limit = q.length <= 5 ? 1 : 2;
+  const found = new Map<string, number>();
+  for (const term of index) {
+    if (!langs.includes(term.lang)) continue;
+    for (const word of term.key.includes(" ") ? [term.key, ...term.key.split(" ")] : [term.key]) {
+      const d = distance(word, q, limit);
+      if (d <= limit) {
+        const label = word === term.key ? term.text : word;
+        if (d < (found.get(label) ?? 99)) found.set(label, d);
+        break;
+      }
+    }
+  }
+  return [...found]
+    .sort((a, b) => a[1] - b[1] || a[0].length - b[0].length)
+    .slice(0, max)
+    .map(([text]) => text);
+}
+
+/** The entries without AI suggestions (for people who want human-written terms only). */
+export function withoutAi(entries: Entry[]): Entry[] {
+  return entries.map((e) => {
+    if (!e.m && !e.def) return e;
+    const t: Entry["t"] = {};
+    const m: NonNullable<Entry["m"]> = {};
+    for (const [lang, terms] of Object.entries(e.t)) {
+      const meta = e.m?.[lang];
+      const keep = terms.map((_, i) => !meta?.[i]?.ai);
+      const kept = terms.filter((_, i) => keep[i]);
+      if (kept.length === 0) continue;
+      t[lang] = kept;
+      if (meta) m[lang] = meta.filter((_, i) => keep[i]);
+    }
+    const def = e.def
+      ? Object.fromEntries(Object.entries(e.def).filter(([, d]) => !d.ai))
+      : undefined;
+    return { ...e, t, m, def: def && Object.keys(def).length ? def : undefined };
+  });
 }

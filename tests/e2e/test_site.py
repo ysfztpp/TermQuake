@@ -156,3 +156,43 @@ def test_show_mode_offers_only_the_pair(app, expect):
     app.goto(URL + "#/e/5")
     app.locator("#entry-5 .button--primary").click()
     expect(app.locator(".show .show-lang")).to_have_count(2)
+
+
+def test_search_finds_terms_in_any_language(app, expect):
+    app.goto(URL)
+    app.fill("#q", "Trümmer")  # German, while the pair is Turkish and English
+    expect(app.locator(".row").first).to_be_visible()
+    expect(app.locator(".row-via").first).to_contain_text("Deutsch")
+
+
+def test_did_you_mean(app, expect):
+    app.goto(URL)
+    app.fill("#q", "depram")
+    expect(app.locator(".did-you-mean")).to_contain_text("deprem")
+
+
+def test_ai_suggestions_are_labelled_and_can_be_hidden(app, expect):
+    app.goto(URL + "#/e/522")
+    panel = app.locator("#entry-522")
+    expect(panel).to_be_visible()
+    switch = app.locator(".ai-switch")
+    if switch.count() == 0:
+        pytest.skip("this build has no AI suggestions")
+    panel.locator(".detail-more summary").click()
+    expect(panel.locator(".term-tag--ai").first).to_be_visible()
+    switch.click()
+    expect(switch).to_have_attribute("aria-checked", "false")
+    expect(app.locator(".term-tag--ai")).to_have_count(0)
+
+
+def test_suggest_a_correction(app, expect):
+    app.goto(URL + "#/e/5")
+    app.locator("#entry-5 .detail-actions .button").last.click()
+    sheet = app.locator(".sheet")
+    expect(sheet).to_be_visible()
+    sheet.locator("input").first.fill("rubble")
+    expect(sheet.locator("a.button")).to_have_attribute(
+        "href", re.compile(r"issues/new\?labels=suggestion")
+    )
+    app.keyboard.press("Escape")
+    expect(sheet).to_have_count(0)

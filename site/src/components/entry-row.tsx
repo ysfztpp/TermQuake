@@ -15,9 +15,12 @@ interface Props {
   open: boolean;
   onToggle: (id: number) => void;
   onShow: (id: number) => void;
+  onSuggest: (entry: Entry) => void;
+  /** Set when the search matched a term in a language outside the pair. */
+  via?: { lang: Language; text: string };
 }
 
-export function EntryRow({ entry, from, to, languages, domains, ui, open, onToggle, onShow }: Props) {
+export function EntryRow({ entry, from, to, languages, domains, ui, open, onToggle, onShow, onSuggest, via }: Props) {
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
     translate(ui, key, vars);
   const src = entry.t[from.code] ?? [];
@@ -48,6 +51,11 @@ export function EntryRow({ entry, from, to, languages, domains, ui, open, onTogg
           {tgt.length ? (
             <>
               <span class="row-tgt-main">{tgt[0]}</span>
+              {entry.m?.[to.code]?.[0]?.ai && (
+                <span class="ai-chip" lang={ui} title={t("aiSuggestion")}>
+                  {t("aiChip")}
+                </span>
+              )}
               {tgt.length > 1 && <span class="row-syn"> / {tgt.slice(1).join(" / ")}</span>}
             </>
           ) : (
@@ -55,21 +63,27 @@ export function EntryRow({ entry, from, to, languages, domains, ui, open, onTogg
           )}
         </span>
         {domain && <span class="row-domain">{domain.label[ui] ?? domain.label.en}</span>}
+        {via && (
+          <span class="row-via">
+            {t("foundIn", { lang: via.lang.native, text: via.text })}
+          </span>
+        )}
       </button>
       {open && (
-        <Detail entry={entry} languages={languages} from={from} ui={ui} id={panelId} onShow={onShow} to={to} />
+        <Detail entry={entry} languages={languages} from={from} ui={ui} id={panelId} onShow={onShow} onSuggest={onSuggest} to={to} />
       )}
     </li>
   );
 }
 
-function Detail({ entry, languages, from, ui, id, onShow, to }: {
+function Detail({ entry, languages, from, ui, id, onShow, onSuggest, to }: {
   entry: Entry;
   languages: Language[];
   from: Language;
   ui: UiLang;
   id: string;
   onShow: (id: number) => void;
+  onSuggest: (entry: Entry) => void;
   to: Language;
 }) {
   const [copied, setCopied] = useState(false);
@@ -124,6 +138,9 @@ function Detail({ entry, languages, from, ui, id, onShow, to }: {
             </button>
           </>
         )}
+        <button type="button" class="button" onClick={() => onSuggest(entry)}>
+          {t("suggest")}
+        </button>
       </div>
       <p class="detail-meta">
         <a href={`#/e/${entry.id}`}>{t("entry", { n: entry.id })}</a>
@@ -173,6 +190,11 @@ function LangTerms({ entry, lang, ui }: { entry: Entry; lang: Language; ui: UiLa
             <span class="definition-label">{t("definition")}: </span>
             {def.x}
             {def.s && <span class="definition-source"> ({t("source")}: {def.s})</span>}
+            {def.ai && (
+              <span class="term-tag term-tag--ai" lang={ui}>
+                {t("aiSuggestion")}
+              </span>
+            )}
           </p>
         )}
       </dd>
