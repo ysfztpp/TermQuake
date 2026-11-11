@@ -79,7 +79,7 @@ def test_tbx_one_term_section_per_term(split):
 def test_csv_joins_terms(split):
     with (split.site_public / "downloads" / "termquake.csv").open(encoding="utf-8-sig") as fh:
         row = next(r for r in csv.DictReader(fh) if r["id"] == "5")
-    assert row["en"] == "debris / rubble / DBR"
+    assert row["en"] == "debris / rubble"  # AI suggestions stay out of the CSV
 
 
 def test_site_data_details(split):

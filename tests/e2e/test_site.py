@@ -178,11 +178,13 @@ def test_ai_suggestions_are_labelled_and_can_be_hidden(app, expect):
     switch = app.locator(".ai-switch")
     if switch.count() == 0:
         pytest.skip("this build has no AI suggestions")
-    panel.locator(".detail-more summary").click()
-    expect(panel.locator(".term-tag--ai").first).to_be_visible()
-    switch.click()
+    # Hidden by default: a person sees human-written terms unless they choose otherwise.
     expect(switch).to_have_attribute("aria-checked", "false")
     expect(app.locator(".term-tag--ai")).to_have_count(0)
+    switch.click()
+    expect(switch).to_have_attribute("aria-checked", "true")
+    panel.locator(".detail-more summary").click()
+    expect(panel.locator(".term-tag--ai").first).to_be_visible()
 
 
 def test_suggest_a_correction(app, expect):

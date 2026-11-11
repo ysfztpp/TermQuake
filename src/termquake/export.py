@@ -166,10 +166,13 @@ def write_csv(entries: list[Entry], languages: list[str], path: Path) -> None:
                     e.id,
                     e.domain or "",
                     *[
-                        _cell(" / ".join(t.text for t in e.terms.get(lang, [])))
+                        _cell(" / ".join(t.text for t in e.terms.get(lang, []) if t.origin != "ai"))
                         for lang in languages
                     ],
-                    *[_cell(e.definitions.get(lang, ("",))[0]) for lang in languages],
+                    *[
+                        _cell(d[0] if (d := e.definitions.get(lang)) and d[2] != "ai" else "")
+                        for lang in languages
+                    ],
                 ]
             )
 
