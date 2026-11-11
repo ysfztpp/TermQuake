@@ -37,7 +37,7 @@ export function App() {
   const [openId, setOpenId] = useState<number | null>(entryFromHash);
   const [showId, setShowId] = useState<number | null>(null);
   const [limit, setLimit] = useState(BATCH);
-  const [showAi, setShowAi] = useState(saved.showAi ?? true);
+  const [showAi, setShowAi] = useState(saved.showAi ?? false);
   // undefined: closed; null: proposing a new term; an entry: suggesting a correction to it.
   const [suggesting, setSuggesting] = useState<Entry | null | undefined>(undefined);
   const searchRef = useRef<HTMLInputElement>(null);
