@@ -3,8 +3,8 @@
 data/db/*.sql (source of truth, in git) -> build/termquake.db (SQLite) -> downloads, website
 """
 
-__version__ = "0.5.0"
+__version__ = "0.6.0.dev0"
 
 # Version of db/schema.sql, stored in the database as PRAGMA user_version.
 # Bump it whenever the tables change.
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5

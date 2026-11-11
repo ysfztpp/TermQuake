@@ -787,3 +787,289 @@ select {
   padding: var(--gutter);
   text-align: center;
 }
+
+/* ---------------------------------------------------------------- experimental branch */
+
+/* AI suggestions are always marked: a chip in the list, a tag in the detail. */
+.ai-chip {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--signal);
+  border-radius: 999px;
+  background: var(--signal-soft);
+  color: var(--signal-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+.results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ai-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-s);
+  cursor: pointer;
+}
+.ai-switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.15s;
+}
+.ai-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 0.15s;
+}
+.ai-switch[aria-checked="true"] .ai-switch-track {
+  background: var(--signal);
+}
+.ai-switch[aria-checked="true"] .ai-switch-track::after {
+  transform: translateX(14px);
+}
+[dir="rtl"] .ai-switch[aria-checked="true"] .ai-switch-track::after {
+  transform: translateX(-14px);
+}
+.row-via {
+  grid-column: 1 / -1;
+  font-size: var(--fs-s);
+  color: var(--ink-2);
+}
+.did-you-mean .link-button {
+  margin-inline-end: 12px;
+  font-weight: 700;
+}
+.empty .button {
+  margin-top: 8px;
+}
+
+/* Suggestion sheet */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  background: rgb(0 0 0 / 0.45);
+}
+.sheet {
+  width: min(100%, 32rem);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 16px var(--gutter) 24px;
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+  box-shadow: 0 -8px 32px rgb(0 0 0 / 0.25);
+}
+@media (min-width: 40rem) {
+  .sheet-backdrop {
+    align-items: center;
+  }
+  .sheet {
+    border-radius: 16px;
+  }
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: var(--fs-l);
+}
+.sheet-context {
+  margin: 4px 0 8px;
+  font-weight: 700;
+}
+.sheet-current {
+  margin: 8px 0;
+  font-size: var(--fs-s);
+}
+.sheet-current .link-button {
+  margin-inline-start: 12px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: var(--fs-s);
+  color: var(--ink-2);
+}
+.field input,
+.field select {
+  min-height: var(--tap);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-m);
+}
+.field input:focus-visible,
+.field select:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 1px;
+}
+.sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.button:disabled,
+.button.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.sheet-small {
+  margin: 12px 0 0;
+  font-size: var(--fs-s);
+  color: var(--ink-2);
+}
+
+/* Listen button in full-screen mode */
+.show-speak {
+  min-height: var(--tap);
+  padding: 0 16px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Coverage per language */
+.coverage {
+  margin: 16px 0;
+}
+.coverage > summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+.coverage ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.coverage li {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr 6.5rem;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-s);
+}
+.cov-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+.cov-rest {
+  fill: var(--line);
+}
+.cov-human {
+  fill: var(--d-first_aid);
+}
+.cov-ai {
+  fill: var(--signal);
+}
+.cov-num {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+.cov-num-ai {
+  color: var(--signal-ink);
+}
+
+/* Look: a dark band for the brand and language pair, entries as cards with the
+   domain colour on the leading edge. */
+.top {
+  background: #172026;
+  color: #f5f7f6;
+}
+.top .brand-tagline {
+  color: #b9c6c0;
+}
+.rows {
+  display: grid;
+  gap: 8px;
+}
+.row {
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--d-none);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.row[data-domain="general"] {
+  border-inline-start-color: var(--d-general);
+}
+.row[data-domain="search_rescue"] {
+  border-inline-start-color: var(--d-search_rescue);
+}
+.row[data-domain="first_aid"] {
+  border-inline-start-color: var(--d-first_aid);
+}
+.row[data-domain="medical"] {
+  border-inline-start-color: var(--d-medical);
+}
+.row[data-domain="misc"] {
+  border-inline-start-color: var(--d-misc);
+}
+.row[data-domain="expressions"] {
+  border-inline-start-color: var(--d-expressions);
+}
+.row.is-open {
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.1);
+}
+.letter {
+  padding: 16px 2px 2px;
+  border-bottom: 0;
+  color: var(--signal-ink);
+  font-size: var(--fs-l);
+}
+.row-tgt-main {
+  color: var(--ink);
+}
+.top select,
+.top .pair-swap,
+.top .ui-lang {
+  color: var(--ink);
+}
+.top .ui-lang {
+  color: var(--ink-2);
+}
+a.button {
+  text-decoration: none;
+}

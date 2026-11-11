@@ -76,6 +76,16 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
   const [main, ...alternatives] = entry.t[lang] ?? [];
   const source = lang !== sourceLang ? entry.t[sourceLang]?.[0] : undefined;
   const long = (main?.length ?? 0) > 28;
+  // Read the term aloud with the device's own voices (works offline where a voice is installed).
+  const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
+  const speak = () => {
+    if (!main) return;
+    const utterance = new SpeechSynthesisUtterance(main);
+    utterance.lang = lang;
+    utterance.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
 
   return (
     <div class="show" role="dialog" aria-modal="true" aria-label={meta?.native ?? lang} ref={dialogRef}>
@@ -93,6 +103,11 @@ export function ShowMode({ entry, languages, initialLang, sourceLang, ui, onClos
             </button>
           ))}
         </div>
+        {canSpeak && main && (
+          <button type="button" class="show-speak" onClick={speak}>
+            {t("speak")}
+          </button>
+        )}
         <button type="button" class="icon-button" ref={closeRef} onClick={onClose} aria-label={t("close")}>
           <CloseIcon width="26" height="26" />
         </button>

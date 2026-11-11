@@ -2,10 +2,12 @@ import { Fragment } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { EntryRow } from "./components/entry-row";
 import { CheckIcon, CloseIcon, GlobeIcon, Mark, OfflineIcon, SearchIcon, SwapIcon } from "./components/icons";
+import { Coverage } from "./components/coverage";
 import { ShowMode } from "./components/show-mode";
+import { SuggestDialog } from "./components/suggest";
 import { detectUiLang, type MessageKey, translate, UI_LANGS, type UiLang } from "./i18n";
 import { applyUpdate, useOnline, usePwa } from "./pwa";
-import { browse, buildIndex, initial, search } from "./search";
+import { browse, buildIndex, initial, search, suggest, withoutAi } from "./search";
 import { loadPrefs, savePrefs } from "./storage";
 import type { Entry, Filter, Language, Termbase } from "./types";
 
@@ -35,6 +37,9 @@ export function App() {
   const [openId, setOpenId] = useState<number | null>(entryFromHash);
   const [showId, setShowId] = useState<number | null>(null);
   const [limit, setLimit] = useState(BATCH);
+  const [showAi, setShowAi] = useState(saved.showAi ?? true);
+  // undefined: closed; null: proposing a new term; an entry: suggesting a correction to it.
+  const [suggesting, setSuggesting] = useState<Entry | null | undefined>(undefined);
   const searchRef = useRef<HTMLInputElement>(null);
   const moreRef = useRef<HTMLLIElement>(null);
   const pwa = usePwa();
@@ -60,7 +65,7 @@ export function App() {
       .catch(() => setFailed(true));
   }, []);
 
-  useEffect(() => savePrefs({ from, to, ui, filter }), [from, to, ui, filter]);
+  useEffect(() => savePrefs({ from, to, ui, filter, showAi }), [from, to, ui, filter, showAi]);
   useEffect(() => {
     document.documentElement.lang = ui;
   }, [ui]);
@@ -81,16 +86,30 @@ export function App() {
     }
   }, [db, openId]);
 
-  const index = useMemo(() => (db ? buildIndex(db.entries) : []), [db]);
+  const entries = useMemo(() => (!db ? [] : showAi ? db.entries : withoutAi(db.entries)), [db, showAi]);
+  const index = useMemo(() => buildIndex(entries), [entries]);
   const lang = (code: string): Language =>
     db?.languages.find((l) => l.code === code) ?? { code, name: code, native: code, dir: "ltr" };
 
-  const deepLinked = db && openId !== null ? db.entries.find((e) => e.id === openId) : undefined;
+  const deepLinked = db && openId !== null ? entries.find((e) => e.id === openId) : undefined;
+  const hits = useMemo(
+    () => (query.trim() ? search(index, query, { langs: [from, to], preferLang: from, filter, allLangs: true }) : []),
+    [index, query, from, to, filter],
+  );
   const list: Entry[] = useMemo(() => {
     if (!db) return [];
-    if (query.trim()) return search(index, query, { langs: [from, to], preferLang: from, filter }).map((h) => h.entry);
-    return browse(db.entries, from, filter);
-  }, [db, index, query, from, to, filter]);
+    if (query.trim()) return hits.map((h) => h.entry);
+    return browse(entries, from, filter);
+  }, [db, entries, hits, query, from, filter]);
+  // Matches found in a language outside the selected pair: the row says where.
+  const via = useMemo(
+    () => new Map(hits.filter((h) => h.lang !== from && h.lang !== to).map((h) => [h.entry.id, h])),
+    [hits, from, to],
+  );
+  const alternatives = useMemo(
+    () => (query.trim() && hits.length === 0 ? suggest(index, query, [from, to]) : []),
+    [index, hits, query, from, to],
+  );
   // An entry opened by link stays visible even if the current filter hides it.
   const rows = deepLinked && !list.includes(deepLinked) && !query.trim() ? [deepLinked, ...list] : list;
 
@@ -133,7 +152,11 @@ export function App() {
     { code: "all", label: t("all") },
     ...db.domains.map((d) => ({ code: d.code, label: d.label[ui] ?? d.label.en })),
   ];
-  const showEntry = showId === null ? undefined : db.entries.find((e) => e.id === showId);
+  const showEntry = showId === null ? undefined : entries.find((e) => e.id === showId);
+  const aiCount = db.entries.reduce(
+    (n, e) => n + Object.values(e.m ?? {}).reduce((k, ms) => k + ms.filter((m) => m.ai).length, 0),
+    0,
+  );
   const missingLink = openId !== null && !deepLinked && !query.trim();
   const browsing = !query.trim();
 
@@ -256,11 +279,34 @@ export function App() {
             {t("notFound", { id: openId })}
           </p>
         )}
-        <p class="results-count" aria-live="polite">
-          {rows.length === 1 ? t("countOne") : t("count", { n: rows.length })}
-        </p>
+        <div class="results-bar">
+          <p class="results-count" aria-live="polite">
+            {rows.length === 1 ? t("countOne") : t("count", { n: rows.length })}
+          </p>
+          {aiCount > 0 && (
+            <button type="button" class="ai-switch" role="switch" aria-checked={showAi} onClick={() => setShowAi((v) => !v)}>
+              <span class="ai-switch-track" aria-hidden="true" />
+              {t("aiToggle")} ({aiCount.toLocaleString(ui)})
+            </button>
+          )}
+        </div>
         {rows.length === 0 ? (
-          <p class="empty">{t("noResults", { q: query.trim() })}</p>
+          <div class="empty">
+            <p>{t("noResults", { q: query.trim() })}</p>
+            {alternatives.length > 0 && (
+              <p class="did-you-mean">
+                {t("didYouMean")}{" "}
+                {alternatives.map((text) => (
+                  <button type="button" key={text} class="link-button" onClick={() => setQuery(text)}>
+                    {text}
+                  </button>
+                ))}
+              </p>
+            )}
+            <button type="button" class="button" onClick={() => setSuggesting(null)}>
+              {t("suggestNew")}
+            </button>
+          </div>
         ) : (
           <ul class="rows">
             {shown.map((entry, i) => {
@@ -283,6 +329,8 @@ export function App() {
                     open={openId === entry.id}
                     onToggle={toggle}
                     onShow={setShowId}
+                    onSuggest={setSuggesting}
+                    via={via.has(entry.id) ? { lang: lang(via.get(entry.id)!.lang), text: via.get(entry.id)!.text } : undefined}
                   />
                 </Fragment>
               );
@@ -301,6 +349,12 @@ export function App() {
       <footer class="foot">
         <div class="foot-inner">
           <p>{t("about")}</p>
+          <p>
+            <button type="button" class="button" onClick={() => setSuggesting(null)}>
+              {t("suggestNew")}
+            </button>
+          </p>
+          <Coverage entries={db.entries} languages={db.languages} ui={ui} />
           <h2>{t("downloads")}</h2>
           <ul class="downloads">
             <li>
@@ -339,6 +393,16 @@ export function App() {
         </div>
       </footer>
 
+      {suggesting !== undefined && (
+        <SuggestDialog
+          entry={suggesting ?? undefined}
+          languages={db.languages}
+          from={fromLang}
+          to={toLang}
+          ui={ui}
+          onClose={() => setSuggesting(undefined)}
+        />
+      )}
       {showEntry && (
         <ShowMode
           entry={showEntry}

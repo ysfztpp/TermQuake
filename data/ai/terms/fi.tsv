@@ -1,0 +1,182 @@
+# AI suggestions (Claude). One line per entry: id<TAB>term; " | " separates several terms.
+54	puristusoireyhtymä | crush-oireyhtymä
+133	nousukahva | jumar
+134	akustinen ja seisminen kuuntelulaite
+138	veden poisto
+139	kantava rakenne
+140	kenttäkeittiö
+165	Räpäytä kerran, jos vastaus on kyllä, ja kahdesti, jos ei.
+173	Tuokaa minulle paarit / huopa / niskatuki.
+221	kumarru, suojaudu ja pidä kiinni
+241	monivamma
+248	elonmerkkien ilmaisin
+265	katastrofitiedon hallintajärjestelmä
+266	katastrofialueen komentaja
+267	hätämajoitusteltta
+268	katastrofisykli
+269	katastrofivapaaehtoinen
+270	katastrofiyhteystoimisto
+271	katastrofilogistiikka
+272	hätäpakkaus | evakuointilaukku
+273	hätätilanteiden ja katastrofien toimintasuunnitelma
+274	Katastrofi- ja hätätilanteiden hallintavirasto | AFAD
+279	keuhko- | pulmonaalinen
+280	aktiivinen siirros
+283	anafylaktinen sokki
+284	anemia
+285	anestesia | nukutus
+286	anestesialääkäri
+287	sydänpysähdys | äkillinen sydänpysähdys
+288	aspiraatio
+289	asystolia
+291	eteinen
+292	leka
+293	paine
+294	ennuste
+295	aivo-selkäydinneste
+296	rakennusala
+298	keuhkoputki
+299	rakennusten yhteentörmäys
+314	pilleri
+329	sahanpuru-uuni
+336	lämpöpuhallin
+346	maatutka
+350	maanjäristysvyöhyke
+353	seisminen eristys
+354	muona | tarvikkeet
+355	liikkuvat terveyspalvelut
+356	turva-alue
+357	turvasaarto
+358	lievä vaurio
+360	rakennuskoneet
+365	Kansallinen lääkinnällinen pelastusryhmä | UMKE
+369	Melkein perillä, jaksa vielä hetki.
+372	käärinliina
+373	hautajaisrukous
+379	muhtar | valittu paikallisedustaja
+391	valtimokanyyli
+392	avata suoniyhteys
+393	jäätyä
+394	dreeni
+395	intubaatio
+396	ruokamyrkytys
+397	pleuradreeni
+398	näön menetys
+399	heikkous | väsymys
+400	hengityksen vinkuminen
+401	hyperglykemia | korkea verensokeri
+402	tunnottomuus
+403	sisäelimet
+404	tulehdus
+405	aivohalvaus
+406	insuliiniruisku
+407	ripuli
+408	iskemia
+409	lonkkaluu
+410	sydänkohtaus
+411	sydämentahdistin
+412	sydänsairaus
+413	verenkierto
+414	veritulppa
+415	verenvuodon tyrehdyttäminen
+416	rytminsiirto | kardioversio
+417	lihaskipu | myalgia
+419	kouristus | spasmi
+420	katetri
+421	luunmurtuma
+422	rusto
+423	sepelvaltimo
+424	solisluu
+428	elinten toimintahäiriö | elinvaurio
+429	ortopedi
+430	ilmarinta
+432	jäädä puristuksiin | olla loukussa
+435	jänne
+436	jäykkäkouristus
+437	sääriluu
+439	rintakehä
+440	reisiluu
+441	puutua
+442	orvaskesi
+443	kammiovärinä
+445	sedaatio | rauhoitus
+446	hengityspalje
+447	keuhkoembolia
+448	Heimlichin ote
+449	aivotärähdys
+450	proteesi
+451	ensihoitoryhmä
+452	ruumiinlämpö
+453	kuumekouristus
+454	epilepsiakohtaus
+457	reagoi (ärsykkeisiin)
+458	ei reagoi (ärsykkeisiin)
+460	hengitystie
+461	suojautua | majoittua
+462	pyörtyminen
+463	kaatuminen | putoaminen
+464	ilmatiehyt | bronkioli
+465	polttoaine
+466	umpimurtuma
+467	avomurtuma
+468	rakennusjäte | murska
+469	rauniot
+470	täyttömaa
+471	epilepsiakohtaus
+473	virtsatiet
+474	hoitoelvytys | ALS
+475	murtunut kylkiluu
+476	liikkuva terveysyksikkö
+477	nenä-mahaletku
+478	nähdä harhoja | hallusinoida
+479	takykardia | tiheälyöntisyys
+480	palovamma
+481	vuodepotilas
+482	kaasupoltin
+483	kytketty rakennus | umpikorttelirakenne
+484	erillinen rakennus
+485	paritalo
+486	hätäkaista | pelastuskuja
+487	imusetti
+488	povidonijodi
+489	sairaalavaatteet | työasu
+490	leikkaustakki
+491	ihonitoja
+492	suoniyhteys
+493	tislattu vesi
+494	synnytyssetti
+495	kudosliima
+496	käsidesi | käsihuuhde
+497	elektrodi
+498	ruisku
+499	verensokerimittari
+500	pleuradreenisetti
+501	järähdys
+502	verensiirtolaite
+503	verenvuotoa tyrehdyttävä aine
+504	kurkunpäänaamari
+505	varasto
+506	nenä-mahaletku
+507	haavoittunut
+508	vanu
+509	haavanhoitotarvikkeet
+510	fysiologinen keittosuolaliuos
+511	nesteensiirtolaite
+512	rankalauta
+513	kenttäsairaala
+514	vatsan leikkausliina
+515	pakaranalusliina
+516	pyyhe
+517	jodi-tinktuura
+518	sterilointikääre
+519	siirrettävä käymälä | bajamaja
+520	suihku
+521	sorkkarauta
+522	hydraulinen tuki
+523	polttoleikkain
+524	hydraulinen työntösylinteri
+525	hydraulinen leikkuri
+526	hydraulinen levitin
+527	sähkötyökalut
+528	Kansainvälinen etsintä- ja pelastustoiminnan neuvoa-antava ryhmä | INSARAG
+529	laskimoveri

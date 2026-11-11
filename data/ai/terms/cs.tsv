@@ -1,0 +1,372 @@
+# AI suggestions (Claude). One line per entry: id<TAB>term; " | " separates several terms.
+153	Zůstaňte na lince, dokud nedorazí pomoc.
+154	Co se stalo?
+155	Před jak dlouhou dobou se to stalo?
+156	Kolik je tam lidí?
+157	Viděl jste, jestli je někdo zraněný?
+158	Kde jsou zranění?
+159	Jsou zavalení?
+160	Jsou při vědomí?
+161	Jak dlouho jsou v bezvědomí?
+162	Podařilo se vám s nimi mluvit?
+163	Kde se nehoda stala?
+164	Kde to bolí?
+165	Mrkněte jednou pro ano a dvakrát pro ne.
+166	Slyšíte mě?
+167	Vidíte mě?
+168	Můžete pohnout ... ?
+169	Máte potíže s dýcháním?
+170	Můžete hýbat prsty pravé/levé ruky/nohy?
+171	Jste alergický na nějaké léky?
+172	Zachovejte klid.
+173	Přineste mi nosítka / deku / krční límec.
+174	co nejdříve
+175	čím dříve, tím lépe
+176	velmi opatrně
+177	shora
+178	zdola
+179	zleva
+180	zprava
+181	rovně
+182	pákové kleště
+183	infekce
+184	injekce
+185	třes
+186	osoba nereaguje
+187	čelovka
+188	megafon
+189	páteř
+190	loket
+191	dehydratace
+192	nekróza
+193	krevní transfuze
+194	trauma
+195	tlakoměr
+196	sekera
+197	krumpáč
+198	lopata
+199	motorová pila
+200	píšťalka
+201	nouzové přístřeší
+202	astma
+203	inhalátor
+204	steh
+205	diabetik
+206	čéška
+207	spací pytel
+208	dárce orgánů
+209	imunita
+210	deka
+211	nitrolební krvácení
+212	těhotná
+213	hypertenze | vysoký krevní tlak
+214	podchlazení | hypotermie
+215	otrava
+216	zápal plic
+217	obrna lícního nervu
+218	vysoká horečka
+219	měkká tkáň
+220	intenzivní péče
+221	k zemi, skryj se a drž se
+222	úhlová bruska
+223	alergie
+224	protizánětlivý lék
+225	antikoagulans | lék na ředění krve
+226	beton
+227	Žádné známé lékové alergie.
+228	bradykardie
+229	námraza
+230	defibrilace
+231	skleróza
+232	kloub
+233	bolest kloubů
+234	kleště | forceps
+235	dušnost
+236	mít záchvat
+237	prasklina
+238	umělé dýchání
+239	nitrožilní léčba
+240	otok | edém
+241	polytrauma
+242	šok
+243	mícha
+244	zlomenina spodiny lebeční
+245	dřevěná podpěrná klec
+246	ochranné brýle
+247	zvedací vak
+248	detektor živých osob
+249	bagr
+250	sbíječka
+251	plynová lahev
+252	kladivo
+253	slepé střevo | apendix
+254	závrať
+255	nevolnost
+257	nakažlivá nemoc
+258	vykloubení
+259	chronické onemocnění
+260	gangréna
+261	nouzová reakce
+262	zdravotnická záchranná služba
+263	zdravotnický záchranář
+265	informační systém pro řízení katastrof
+266	velitel oblasti katastrofy
+267	stan pro postižené katastrofou
+268	cyklus katastrof
+269	dobrovolník při katastrofách
+270	styčná kancelář pro katastrofy
+271	logistika při katastrofách
+272	evakuační zavazadlo
+273	plán reakce na mimořádné události a katastrofy
+274	Úřad pro řízení katastrof a mimořádných událostí | AFAD
+275	těžké poškození
+276	bolest
+277	rodinný potravinový balíček
+278	plicní ventilátor
+279	plicní
+280	aktivní zlom
+281	akutní
+282	sádrový obvaz
+283	anafylaktický šok
+284	anémie | chudokrevnost
+285	anestezie
+286	anesteziolog
+287	srdeční zástava
+288	aspirace
+289	asystolie
+290	očkování
+291	síň
+292	palice
+293	tlak
+294	prognóza
+295	mozkomíšní mok
+296	zastavěná plocha
+298	průduška
+299	vzájemné narážení budov
+300	nitrožilní
+301	analgetikum | lék proti bolesti
+302	sedativum
+303	antipyretikum | lék proti horečce
+304	antibiotikum
+306	antihistaminikum
+307	anestetikum
+308	projímadlo
+309	antacidum
+310	dekongestivum
+311	antitusikum | lék proti kašli
+312	antiseptikum
+313	tableta
+314	pilulka
+315	prášek
+316	kapsle
+317	čípek
+318	ampule
+319	krém
+320	gel
+321	sirup
+322	kapky
+323	sprej
+324	šumivá tableta
+325	nežádoucí účinky
+326	lahvička
+327	trvanlivé potraviny
+328	menstruační vložka
+329	kamna na piliny
+330	kamna na dřevo
+331	sporák na dřevo
+332	peletová kamna
+334	petrolejová kamna
+335	elektrické topení
+336	teplovzdušný ventilátor
+337	benzín
+338	nafta
+339	elektřina
+340	LPG | zkapalněný ropný plyn
+341	CNG | stlačený zemní plyn
+342	termoprádlo
+343	termoska
+344	koš na žhavé uhlí
+345	palivové dřevo
+346	georadar
+347	pila na beton
+348	zdravotnický záchranář
+349	panická ataka
+350	seismický pás
+351	doba trvání zemětřesení
+352	intenzita zemětřesení
+353	seismická izolace
+354	zásoby
+355	mobilní zdravotní služby
+356	bezpečná zóna
+357	bezpečnostní kordon
+358	lehké poškození
+359	oznámit
+360	stavební stroje
+361	předtřes
+362	seismograf
+363	otékat
+364	evakuace
+365	Národní zdravotnický záchranný tým | UMKE
+366	Pomůžeme vám.
+367	Jsme tady.
+368	Neusínejte.
+369	Už to skoro je, vydržte ještě chvilku.
+370	Dostaneme vás odtamtud.
+371	Jak se jmenujete?
+372	rubáš
+373	pohřební modlitba
+374	modlitba
+375	okresní hejtman
+376	starosta
+377	hromadný hrob
+378	pohřbení
+379	muchtar | volený místní zástupce
+380	pohřební vůz
+381	oblast katastrofy
+382	opěrná zeď
+383	kojenecká lahev
+384	dudlík
+385	záchranářský pes
+386	letiště
+388	savička na kojeneckou lahev
+389	hematom
+390	uhlí
+391	arteriální katétr
+392	zavést žilní vstup
+393	mrznout
+394	drén
+395	intubace
+396	otrava jídlem
+397	hrudní drén
+398	ztráta zraku
+399	slabost | únava
+400	sípání
+401	hyperglykemie
+402	necitlivost
+403	vnitřní orgány
+404	zánět
+405	mrtvice
+406	inzulinová stříkačka
+407	průjem
+408	ischemie
+409	kyčelní kost
+410	infarkt
+411	kardiostimulátor
+412	srdeční onemocnění
+413	krevní oběh
+414	krevní sraženina
+415	zastavení krvácení
+416	kardioverze
+417	bolest svalů | myalgie
+418	svalový relaxant
+419	křeč
+420	katétr
+421	zlomenina kosti
+422	chrupavka
+423	věnčitá tepna
+424	klíční kost
+425	zvracení
+426	lokální anestetikum
+427	močový měchýř
+428	orgánové selhání
+429	ortoped
+430	pneumotorax
+431	menstruace
+432	být zaklíněný
+433	otok
+434	nízký krevní tlak | hypotenze
+435	šlacha
+436	tetanus
+437	holenní kost
+438	povrchové anestetikum
+439	hrudník | hrudní koš
+440	stehenní kost
+441	zdřevěnět | znecitlivět
+442	pokožka
+443	fibrilace komor
+444	zraněný
+445	sedace
+446	ambuvak | samorozpínací vak
+447	plicní embolie
+448	Heimlichův manévr
+449	otřes mozku
+450	protéza
+451	tým urgentní zdravotní péče
+452	tělesná teplota
+453	febrilní křeče
+454	epileptický záchvat
+455	při vědomí
+456	v bezvědomí
+457	reaguje (na podněty)
+458	nereaguje (na podněty)
+459	hypoglykemie
+460	dýchací cesty
+461	ukrýt se
+462	mdloba
+463	pád
+464	průdušinka
+465	palivo
+466	zavřená zlomenina
+467	otevřená zlomenina
+468	suť
+469	trosky
+470	navážka
+471	epileptický záchvat
+472	bourací kladivo
+473	močové cesty
+474	rozšířená neodkladná resuscitace | ALS
+475	zlomené žebro
+476	mobilní zdravotnická jednotka
+477	nazogastrická sonda
+478	mít halucinace
+479	tachykardie
+480	popálenina
+481	upoutaný na lůžko
+482	plynový hořák
+483	řadová zástavba
+484	samostatně stojící budova
+485	dvojdům
+486	záchranářská ulička
+487	odsávací souprava
+488	jodovaný povidon
+489	zdravotnické oblečení
+490	operační plášť
+491	kožní stapler
+492	cévní přístup
+493	destilovaná voda
+494	porodní souprava
+495	tkáňové lepidlo
+496	dezinfekce na ruce
+497	elektroda
+498	injekční stříkačka
+499	glukometr
+500	souprava pro hrudní drenáž
+501	otřes
+502	transfuzní souprava
+503	hemostatikum
+504	laryngeální maska
+505	sklad
+506	nazogastrická sonda
+507	raněný
+508	vata
+509	obvazový materiál
+510	fyziologický roztok
+511	infuzní souprava
+512	páteřní deska
+513	polní nemocnice
+514	břišní rouška
+515	rouška pod hýždě
+516	ručník
+517	jodová tinktura
+518	sterilizační obal
+519	mobilní toaleta
+520	sprcha
+521	páčidlo
+522	hydraulická podpěra
+523	řezací hořák
+524	hydraulický rozpěrný válec
+525	hydraulické nůžky
+526	hydraulický rozpínák
+527	elektrické nářadí
+528	Mezinárodní poradní skupina pro vyhledávání a záchranu | INSARAG
+529	žilní krev
