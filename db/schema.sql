@@ -93,6 +93,8 @@ CREATE TABLE definition (
   lang      TEXT NOT NULL REFERENCES language(code) ON DELETE RESTRICT,
   text      TEXT NOT NULL CHECK (trim(text) <> ''),
   source    TEXT,                                     -- as typed in the sheet, e.g. 'TDK'; NULL if none
+  origin        TEXT NOT NULL DEFAULT 'sheet' CHECK (origin IN ('sheet', 'team', 'ai')),
+  review_status TEXT NOT NULL DEFAULT 'unreviewed' CHECK (review_status IN ('unreviewed', 'reviewed')),
   UNIQUE (entry_id, lang)                             -- at most one definition per entry and language
 );
 
@@ -143,4 +145,4 @@ LEFT JOIN domain d ON d.id = e.domain_id
 LEFT JOIN (SELECT * FROM term ORDER BY entry_id, lang, sort_order) t ON t.entry_id = e.id
 GROUP BY e.id;
 
-PRAGMA user_version = 4;  -- schema version, checked by the tools
+PRAGMA user_version = 5;  -- schema version, checked by the tools

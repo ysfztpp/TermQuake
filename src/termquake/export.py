@@ -65,7 +65,7 @@ class Entry:
     id: int
     domain: str | None  # domain code
     terms: dict[str, list[Term]]  # lang -> terms, main term first
-    definitions: dict[str, tuple[str, str | None]]  # lang -> (text, source)
+    definitions: dict[str, tuple[str, str | None, str]]  # lang -> (text, source, origin)
 
 
 def load_entries(conn: sqlite3.Connection) -> list[Entry]:
@@ -80,10 +80,10 @@ def load_entries(conn: sqlite3.Connection) -> list[Entry]:
         "ORDER BY entry_id, lang, sort_order"
     ):
         entries[eid].terms.setdefault(lang, []).append(Term(text, ttype, note, origin))
-    for eid, lang, text, source in conn.execute(
-        "SELECT entry_id, lang, text, source FROM definition ORDER BY id"
+    for eid, lang, text, source, origin in conn.execute(
+        "SELECT entry_id, lang, text, source, origin FROM definition ORDER BY id"
     ):
-        entries[eid].definitions[lang] = (text, source)
+        entries[eid].definitions[lang] = (text, source, origin)
     return list(entries.values())
 
 
@@ -122,11 +122,15 @@ def write_tbx(
                 continue
             ls = ET.SubElement(ce, q("langSec"), {XML_LANG: lang})
             if lang in e.definitions:
-                text, source = e.definitions[lang]
+                text, source, def_origin = e.definitions[lang]
                 grp = ET.SubElement(ls, q("descripGrp"))
                 ET.SubElement(grp, q("descrip"), {"type": "definition"}).text = text
                 if source:
                     ET.SubElement(grp, q("admin"), {"type": "source"}).text = source
+                elif def_origin == "ai":
+                    ET.SubElement(
+                        grp, q("admin"), {"type": "source"}
+                    ).text = "AI suggestion, not verified"
             for t in e.terms[lang]:
                 ts = ET.SubElement(ls, q("termSec"))
                 ET.SubElement(ts, q("term")).text = t.text
@@ -253,8 +257,12 @@ def _entry_json(e: Entry) -> dict:
         item["d"] = e.domain
     if e.definitions:
         item["def"] = {
-            lang: {"x": text.strip(), **({"s": source.strip()} if source else {})}
-            for lang, (text, source) in e.definitions.items()
+            lang: {
+                "x": text.strip(),
+                **({"s": source.strip()} if source else {}),
+                **({"ai": 1} if origin == "ai" else {}),
+            }
+            for lang, (text, source, origin) in e.definitions.items()
         }
     return item
 

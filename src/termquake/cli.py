@@ -21,6 +21,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from .ai import import_ai
 from .clean import RULES, clean_database
 from .config import Config, Paths, find_root, load_config
 from .db import (
@@ -36,6 +37,7 @@ from .export import ExportError, export_all
 from .fetch import fetch_sheet
 from .review import build_review, read_suggestions, write_review_xlsx
 from .sheet import SheetError, import_sheet, write_report
+from .standardise import standardise
 
 
 def run_import(config: Config, paths: Paths, *, force: bool) -> str:
@@ -92,6 +94,8 @@ def main(argv: list[str] | None = None) -> int:
     review = sub.add_parser("review", help="write the review sheet (xlsx) for one language")
     review.add_argument("lang", help="language code, e.g. en")
     review.add_argument("--out", type=Path, help="output file (default: build/review-<lang>.xlsx)")
+    sub.add_parser("standardise", help="split cells into one row per term (build/termquake.db)")
+    sub.add_parser("ai-import", help="fill gaps from data/ai/ (terms, definitions), marked as AI")
     fetch = sub.add_parser("fetch-sheet", help="download a Google Sheet's tabs as CSV (read-only)")
     fetch.add_argument("--sheet-id", required=True, help="ID of the sheet to read (use a copy)")
     fetch.add_argument("--out", type=Path, required=True, help="directory for the CSV files")
@@ -172,6 +176,22 @@ def main(argv: list[str] | None = None) -> int:
             write_review_xlsx(rows, name[0], out, counts)
             need = sum(1 for r in rows if r.status == "review")
             print(f"wrote {out}: {len(rows)} rows, {need} need a decision")
+        if args.command in ("standardise", "ai-import"):
+            if not paths.database.exists():
+                raise DatabaseError("build/termquake.db not found. Run `termquake build` first.")
+            conn = connect(paths.database)
+            try:
+                if args.command == "standardise":
+                    changed = standardise(conn, paths.root / "data" / "review")
+                    print(f"standardised {sum(changed.values())} cells in {len(changed)} languages")
+                else:
+                    terms, defs = import_ai(conn, paths.root / "data" / "ai")
+                    print(
+                        f"added {sum(terms.values())} AI terms in {len(terms)} languages, "
+                        f"{sum(defs.values())} AI definitions; run `termquake dump` to save"
+                    )
+            finally:
+                conn.close()
         if args.command == "fetch-sheet":
             changed = fetch_sheet(args.sheet_id, config.tabs, args.out)
             print("changed: " + ", ".join(changed) if changed else "no changes")
