@@ -198,3 +198,28 @@ def test_suggest_a_correction(app, expect):
     )
     app.keyboard.press("Escape")
     expect(sheet).to_have_count(0)
+
+
+def test_colour_theme_switch(chromium, expect):
+    """The colours button cycles device -> light -> dark and is remembered."""
+    ctx = chromium.new_context(color_scheme="dark", locale="tr-TR")
+    page = ctx.new_page()
+    page.goto(URL)
+    page.wait_for_selector(".row")
+
+    def bg():
+        return page.evaluate("getComputedStyle(document.body).backgroundColor")
+
+    assert bg() == "rgb(0, 0, 0)"  # follows the device: dark
+    button = page.locator(".theme-button")
+    button.click()  # -> light
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+    assert bg() == "rgb(245, 247, 246)"
+    button.click()  # -> dark
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.reload()
+    page.wait_for_selector(".row")
+    assert page.locator("html").get_attribute("data-theme") == "dark"  # remembered
+    button.click()  # -> follow the device again
+    expect(page.locator("html")).not_to_have_attribute("data-theme", re.compile(".+"))
+    ctx.close()

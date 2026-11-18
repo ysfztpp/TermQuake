@@ -1,12 +1,13 @@
 import { Fragment } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { EntryRow } from "./components/entry-row";
-import { CheckIcon, CloseIcon, GlobeIcon, Mark, OfflineIcon, SearchIcon, SwapIcon } from "./components/icons";
+import { AutoThemeIcon, CheckIcon, CloseIcon, GlobeIcon, Mark, MoonIcon, OfflineIcon, SearchIcon, SunIcon, SwapIcon } from "./components/icons";
 import { Coverage } from "./components/coverage";
 import { ShowMode } from "./components/show-mode";
 import { SuggestDialog } from "./components/suggest";
 import { detectUiLang, type MessageKey, translate, UI_LANGS, type UiLang } from "./i18n";
 import { applyUpdate, useOnline, usePwa } from "./pwa";
+import { applyTheme, asTheme, type Theme, THEMES } from "./theme";
 import { browse, buildIndex, initial, search, suggest, withoutAi } from "./search";
 import { loadPrefs, savePrefs } from "./storage";
 import type { Entry, Filter, Language, Termbase } from "./types";
@@ -38,6 +39,7 @@ export function App() {
   const [showId, setShowId] = useState<number | null>(null);
   const [limit, setLimit] = useState(BATCH);
   const [showAi, setShowAi] = useState(saved.showAi ?? false);
+  const [theme, setTheme] = useState<Theme>(asTheme(saved.theme));
   // undefined: closed; null: proposing a new term; an entry: suggesting a correction to it.
   const [suggesting, setSuggesting] = useState<Entry | null | undefined>(undefined);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -65,7 +67,8 @@ export function App() {
       .catch(() => setFailed(true));
   }, []);
 
-  useEffect(() => savePrefs({ from, to, ui, filter, showAi }), [from, to, ui, filter, showAi]);
+  useEffect(() => savePrefs({ from, to, ui, filter, showAi, theme }), [from, to, ui, filter, showAi, theme]);
+  useEffect(() => applyTheme(theme), [theme]);
   useEffect(() => {
     document.documentElement.lang = ui;
   }, [ui]);
@@ -173,21 +176,24 @@ export function App() {
               <h1 class="brand-name">TermQuake</h1>
               <p class="brand-tagline">{t("tagline")}</p>
             </div>
-            <label class="ui-lang" title={t("interface")}>
-              <GlobeIcon width="18" height="18" />
-              <span aria-hidden="true">{ui.toUpperCase()}</span>
-              <select
-                aria-label={t("interface")}
-                value={ui}
-                onChange={(e) => setUi((e.target as HTMLSelectElement).value as UiLang)}
-              >
-                {UI_LANGS.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div class="top-tools">
+              <ThemeButton theme={theme} ui={ui} onChange={setTheme} />
+              <label class="ui-lang" title={t("interface")}>
+                <GlobeIcon width="18" height="18" />
+                <span aria-hidden="true">{ui.toUpperCase()}</span>
+                <select
+                  aria-label={t("interface")}
+                  value={ui}
+                  onChange={(e) => setUi((e.target as HTMLSelectElement).value as UiLang)}
+                >
+                  {UI_LANGS.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           <div class="pair">
@@ -443,5 +449,18 @@ function Message({ text, busy }: { text: string; busy?: boolean }) {
       <Mark class="brand-mark" />
       <p>{text}</p>
     </main>
+  );
+}
+
+/** Cycles through follow-device, light and dark. */
+function ThemeButton({ theme, ui, onChange }: { theme: Theme; ui: UiLang; onChange: (t: Theme) => void }) {
+  const mode = translate(ui, theme === "auto" ? "themeAuto" : theme === "light" ? "themeLight" : "themeDark");
+  const label = translate(ui, "theme", { mode });
+  const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  const Icon = theme === "auto" ? AutoThemeIcon : theme === "light" ? SunIcon : MoonIcon;
+  return (
+    <button type="button" class="icon-button theme-button" onClick={() => onChange(next)} aria-label={label} title={label}>
+      <Icon width="18" height="18" />
+    </button>
   );
 }

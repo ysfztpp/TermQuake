@@ -12,6 +12,8 @@ export interface Prefs {
   filter?: string;
   /** false hides AI suggestions. */
   showAi?: boolean;
+  /** Colour theme: auto (follow the device), light or dark. */
+  theme?: string;
 }
 
 export function loadPrefs(): Prefs {

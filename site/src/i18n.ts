@@ -88,6 +88,10 @@ const strings = {
     es: "No se pudieron cargar los términos. Compruebe la conexión y recargue la página.",
   },
   interface: { en: "Interface language", tr: "Arayüz dili", es: "Idioma de la interfaz" },
+  theme: { en: "Colours: {mode}", tr: "Renkler: {mode}", es: "Colores: {mode}" },
+  themeAuto: { en: "follow device", tr: "cihaza göre", es: "según el dispositivo" },
+  themeLight: { en: "light", tr: "açık", es: "claro" },
+  themeDark: { en: "dark", tr: "koyu", es: "oscuro" },
   about: {
     en: "TermQuake was started by translation students at Boğaziçi University after the 6 February 2023 earthquakes, and grew with volunteer translators, interpreters and developers. It helps volunteer interpreters and anyone in a disaster zone communicate with search and rescue teams.",
     tr: "TermQuake, 6 Şubat 2023 depremlerinin ardından Boğaziçi Üniversitesi çeviri öğrencileri tarafından başlatıldı; gönüllü çevirmenler, tercümanlar ve yazılımcılarla büyüdü. Gönüllü tercümanların ve afet bölgesindeki herkesin arama kurtarma ekipleriyle iletişim kurmasına yardım eder.",
