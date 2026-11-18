@@ -35,9 +35,19 @@
   color-scheme: light dark;
 }
 
-/* True black in dark mode: OLED screens use far less battery, which matters in the field. */
+/* Header band: light in light mode, dark in dark mode. */
+:root {
+  --top-bg: var(--surface);
+  --top-ink: var(--ink);
+  --top-ink-2: var(--ink-2);
+  --top-line: var(--line);
+}
+
+/* Dark: true black, because OLED screens use far less battery, which matters in
+   the field. It follows the device unless the person picked light or dark with
+   the colours button (data-theme on <html>, see theme.ts). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --paper: #000000;
     --surface: #0e1417;
     --ink: #eef2f0;
@@ -53,6 +63,26 @@
     --d-expressions: #63a4e8;
     --d-none: #3a4642;
   }
+}
+:root[data-theme="dark"] {
+  --paper: #000000;
+  --surface: #0e1417;
+  --ink: #eef2f0;
+  --ink-2: #a4b1ab;
+  --line: #26302c;
+  --signal: #ff7a2f;
+  --signal-ink: #ff9a5c;
+  --signal-soft: #33170a;
+  --d-general: #8fa1aa;
+  --d-first_aid: #48bb78;
+  --d-medical: #f56565;
+  --d-misc: #a78bdb;
+  --d-expressions: #63a4e8;
+  --d-none: #3a4642;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 *,
@@ -839,7 +869,8 @@ select {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--surface);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
   transition: transform 0.15s;
 }
 .ai-switch[aria-checked="true"] .ai-switch-track {
@@ -1012,14 +1043,14 @@ select {
   color: var(--signal-ink);
 }
 
-/* Look: a dark band for the brand and language pair, entries as cards with the
-   domain colour on the leading edge. */
+/* Look: entries as cards with the domain colour on the leading edge. */
 .top {
-  background: #172026;
-  color: #f5f7f6;
+  background: var(--top-bg);
+  color: var(--top-ink);
+  border-bottom: 1px solid var(--top-line);
 }
 .top .brand-tagline {
-  color: #b9c6c0;
+  color: var(--top-ink-2);
 }
 .rows {
   display: grid;
@@ -1062,12 +1093,15 @@ select {
 .row-tgt-main {
   color: var(--ink);
 }
-.top select,
-.top .pair-swap,
-.top .ui-lang {
-  color: var(--ink);
+.top-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
-.top .ui-lang {
+.theme-button {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 999px;
   color: var(--ink-2);
 }
 a.button {
