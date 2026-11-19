@@ -1,7 +1,8 @@
 # The `experimental` branch
 
-Everything here is a trial. Nothing on this branch is deployed, and `main` is
-unchanged. Merge parts of it only after the team has looked at them.
+This branch was merged into `main` on 11 November 2026 (PR #9) and is live.
+The previous `main` is kept on the branch `legacy`. This file records what the
+branch added.
 
 ## Data
 | Step | Command | Result |
