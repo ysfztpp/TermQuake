@@ -23,24 +23,31 @@ flowchart TB
     S[db/schema.sql<br/>the tables]
     D[data/db/*.sql<br/>the data, one row per line]
     L[data/legacy<br/>frozen sheet snapshot]
+    A[data/ai<br/>AI suggestions, marked]
   end
   subgraph Local["Editing (anyone with the repository)"]
     B[(build/termquake.db)]
   end
   subgraph CI["GitHub Actions"]
-    C[Checks: tests, build, dump --check]
+    C[Checks: tests, build, dump --check, clean --check]
     P[Deploy: same checks, export, browser tests]
   end
   subgraph Public["Public, static"]
     W[Offline website<br/>GitHub Pages]
     DL[TBX, CSV, SQLite]
   end
+  subgraph People["Readers"]
+    G[Suggestions<br/>GitHub issues]
+  end
   L -. termquake import-sheet, once .-> D
   S --> B
   D -- termquake build --> B
+  A -- termquake ai-import --> B
   B -- termquake dump --> D
   D --> C --> P --> W
   P --> DL
+  W -. suggest a correction .-> G
+  G -. reviewed, applied by hand .-> B
 ```
 
 ### Commands
@@ -50,6 +57,10 @@ flowchart TB
 | `termquake build` | Creates the SQLite database from `db/schema.sql` + `data/db`. Refuses to discard edits not yet dumped (`--force` overrides) | `build/termquake.db` |
 | `termquake dump` | Saves the (edited) database back as canonical SQL. Refuses if `data/db` changed since the build (`--force` overrides) or a reference is broken | `data/db/*.sql` |
 | `termquake dump --check` | Fails if the committed files are not exactly what `dump` would write | nothing |
+| `termquake clean` | Fixes spaces, invisible characters and Unicode form, never words (`--check` fails instead) | `build/termquake.db` |
+| `termquake standardise` | Splits cells into one row per term (synonyms, abbreviations) | `build/termquake.db` |
+| `termquake ai-import` | Fills gaps from `data/ai/`, marked `origin = 'ai'`; never replaces a term | `build/termquake.db` |
+| `termquake review <lang>` | Review sheet for one language | `build/review-<lang>.xlsx` |
 | `termquake export` | Writes the downloads and the website data | `site/public/…` |
 | `termquake import-sheet` | Once: sheet snapshot → `data/db` (refuses to overwrite) | `data/db`, `data/legacy/IMPORT_REPORT.md` |
 
@@ -79,14 +90,16 @@ the other's changes.
    rows that changed.
 2. **Data releases**: a tag `data-vX.Y.Z` publishes the database, TBX and CSV
    as a GitHub Release, a fixed version for citation (connect Zenodo for a DOI).
-3. **Code versions**: the earlier 16-table design is kept on the branch
+3. **Code versions**: the site and data before the 11 November 2026 update
+   are kept on the branch `legacy`; the earlier 16-table design on
    `archive/v0.1.1-full-schema`.
 
 ## Website
 
 - **Data:** `termquake export` writes one JSON file with every language that
-  has a term (about 400 KB, compressed in transit). The site shows each cell without surrounding spaces; the
-  database keeps them as typed.
+  has a term (about 580 KB, compressed in transit). AI suggestions carry a
+  flag; the site hides them unless the reader switches them on, and the CSV
+  download leaves them out.
 - **Search** ignores case, accents and Turkish dotless/dotted i, so "sargi"
   finds "sargı bezi" without a Turkish keyboard.
 - **Phones first:** the long list renders in batches of 60 as you scroll;

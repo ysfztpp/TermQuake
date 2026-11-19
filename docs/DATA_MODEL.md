@@ -48,6 +48,8 @@ erDiagram
         TEXT lang FK "language.code"
         TEXT text
         TEXT source "e.g. TDK"
+        TEXT origin "sheet, team or ai"
+        TEXT review_status "unreviewed or reviewed"
     }
 ```
 
@@ -60,8 +62,8 @@ The full definitions, with comments, are in [`db/schema.sql`](../db/schema.sql).
 | `language` | a language of the termbase (a language column of the sheet) | 31 | `id`, `code`, `name_en`, `name_native`, `direction` |
 | `domain` | a value of the sheet's Domain column | 6 | `id`, `code`, `name_en`, `name_tr`, `name_es` |
 | `entry` | one meaning (one row of the sheet) | 523 | `id` (the sheet's Nr.), `domain_id` |
-| `term` | one way a language says an entry (synonyms and abbreviations are separate rows) | 12,415 | `id`, `entry_id`, `lang`, `text`, `sort_order`, `term_type`, `note`, `origin`, `review_status` |
-| `definition` | what an entry means in one language | 14 | `id`, `entry_id`, `lang`, `text`, `source` |
+| `term` | one way a language says an entry (synonyms and abbreviations are separate rows) | 17,445 | `id`, `entry_id`, `lang`, `text`, `sort_order`, `term_type`, `note`, `origin`, `review_status` |
+| `definition` | what an entry means in one language | 153 | `id`, `entry_id`, `lang`, `text`, `source`, `origin`, `review_status` |
 
 Plus one **view**, `entry_overview`: a saved query that shows the data the way
 the sheet did, one row per entry with one column per language (`en`, `tr`, `es`, `de`, ...). A view stores
@@ -133,10 +135,10 @@ SQLite checks foreign keys only when `PRAGMA foreign_keys = ON`. The
 - A column that points to another table is named `<table>_id` and is a foreign key.
 - Foreign keys have an index (`entry_domain_id_idx`, `term_lang_idx`); `UNIQUE` constraints create their own.
 - Languages use BCP 47 codes: `en`, `tr`, `kmr` (Kurmanji Kurdish), `zh-Hans` (simplified Chinese).
-- The schema has a version number (`PRAGMA user_version = 4`), raised whenever the tables change.
+- The schema has a version number (`PRAGMA user_version = 5`), raised whenever the tables change.
 - Every column has a comment in `db/schema.sql` saying what it holds.
 
-## The data: as typed, mechanically cleaned
+## The data: where it came from
 
 The data was imported from the sheet exactly as typed ([ADR 0010](adr/0010-four-tables-raw-data.md),
 [0011](adr/0011-all-languages-language-table.md)); only spreadsheet placeholders
@@ -145,9 +147,21 @@ The data was imported from the sheet exactly as typed ([ADR 0010](adr/0010-four-
 Then one clean-up step was applied ([ADR 0012](adr/0012-mechanical-cleanup.md)):
 spaces at the start and end, line breaks, double and no-break spaces, invisible
 characters, the Turkish "i̇" and the Unicode form. It changes how text is stored,
-never the words: a cell with several synonyms, such as `enkaz / moloz`, is still
-one term row. `termquake clean --check` makes sure every later edit follows
+never the words. `termquake clean --check` makes sure every later edit follows
 the same rules.
+
+On 11 November 2026 two more steps were applied:
+
+- **One row per term** (`termquake standardise`): 1,464 cells were split into
+  separate terms. The rules were: a spaced ` / ` separates synonyms, and a
+  capitalised abbreviation in brackets becomes its own term. English also used
+  the review suggestions in `data/review/`.
+- **AI gap-filling** (`termquake ai-import`): 3,038 missing terms in 28
+  languages and 139 English definitions, written by an AI model and stored with
+  `origin = 'ai'`, `review_status = 'unreviewed'`
+  ([`data/ai/README.md`](../data/ai/README.md)).
+
+Of the 17,445 terms, 13,969 come from the sheet and 3,476 are AI suggestions.
 
 [`data/legacy/IMPORT_REPORT.md`](../data/legacy/IMPORT_REPORT.md) lists what the
 import noticed, and the queries in [`queries/`](../queries/) find what is left
